@@ -203,5 +203,5 @@ if __name__ == "__main__":
 
     elapsed = timeit.default_timer() - start2
     clock_ticks = time.time() - start1
-    # clockticks 02:08 shayyyyyy
+
     print("Overall runtime: " + str(elapsed) + " Ticks: " + str(clock_ticks))
