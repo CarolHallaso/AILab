@@ -21,9 +21,11 @@ class GA_struct:
         self.string = string
         self.fitness = fitness
 
+
 class GeneticAlgorithm:
 
-    def init_population(self, population: list, buffer: list):
+    @staticmethod
+    def init_population(population: list, buffer: list):
 
         tsize = len(GA_TARGET)
 
@@ -34,7 +36,7 @@ class GeneticAlgorithm:
                 citizen.string += chr(random.randrange(0, 90) + 32)
 
             population[i] = citizen
-
+        #buffer.resize(GA_POPSIZE);
         return
 
     def calc_fitness(self, population: list[GA_struct]):
@@ -125,7 +127,7 @@ class GeneticAlgorithm:
         for i in range(len(population)):
             sum += population[i].fitness
 
-        return sum/len(population)
+        return sum/GA_POPSIZE
 
     def calcStd(self, population: list[GA_struct]):
 
@@ -149,6 +151,11 @@ class GeneticAlgorithm:
                     fitness += 70
 
             i.fitness = fitness
+
+   # def PSO(self, population):
+        #for i in range(GA_POPSIZE)
+          #  population[i].string =
+          #rando init ben unknown bound values
 
 
 if __name__ == "__main__":
@@ -178,13 +185,14 @@ if __name__ == "__main__":
         clock_ticks = time.time() - start1
 
         fitness = []
-        for i in range(len(population)):
-            fitness.append(population[i].fitness)
+        for j in range(len(population)):
+            fitness.append(population[j].fitness)
 
+        print("Time elapsed: " + str(elapsed) + " Clock ticks: " + str(clock_ticks))
         plt.xlabel('Fitness')
         plt.ylabel('Number of Genomes')
         plt.hist(fitness)
-        plt.show()
+      # plt.show()
 
 
         if population[0].fitness == 0:
