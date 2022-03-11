@@ -185,9 +185,6 @@ def RWS(population, buffer, size):
 
 if __name__ == "__main__":
 
-    start1 = time.time()                       # to measure clock ticks
-    start2 = timeit.default_timer()            # to measure elapsed time
-
     problem = GeneticAlgorithm()
     random.seed()
     pop_alpha = [None] * GA_POPSIZE
@@ -195,29 +192,35 @@ if __name__ == "__main__":
     problem.init_population(pop_alpha, pop_beta)
     population = pop_alpha
     buffer = pop_beta
+    start_t = time.time()
 
     for i in range(GA_MAXITER):
 
-        generation_start = timeit.default_timer()
-
+        time2 = time.time()  # clock ticks
         problem.calc_fitness(population)
         problem.sort_by_fitness(population)
         problem.print_best(population)
         print("mean of generation is: " + str(problem.calcAVG(population)))
         print("standard deviation of generation is: " + str(problem.calcStd(population)))
 
-        elapsed = timeit.default_timer() - generation_start
-        clock_ticks = time.time() - start1
+        clock_ticks = time.time() - time2
+        E_T = time.time() - start_t
+
 
         fitness = []
         for j in range(len(population)):
             fitness.append(population[j].fitness)
-
-        print("Time elapsed: " + str(elapsed) + " Clock ticks: " + str(clock_ticks))
+        
+        print("Clock ticks: " + str(clock_ticks))
+        print("Elapsed time: " + str(E_T))
+        
         plt.xlabel('Fitness')
         plt.ylabel('Number of Genomes')
         plt.hist(fitness)
       # plt.show()
+
+
+        
 
 
         if population[0].fitness == 0:
@@ -225,8 +228,11 @@ if __name__ == "__main__":
 
         problem.mate(population, buffer, "UNIFORM")
         population, buffer = problem.swap(population, buffer)
-#e
-    elapsed = timeit.default_timer() - start2
-    clock_ticks = time.time() - start1
 
-    print("Overall runtime: " + str(elapsed) + " Ticks: " + str(clock_ticks))
+
+
+    E_T = time.time() - start_t
+    clock_ticks = time.time() - time2
+
+
+    print("Elapsed time: " + str(E_T) + " Clock Ticks: " + str(clock_ticks))
