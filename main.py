@@ -156,7 +156,32 @@ class GeneticAlgorithm:
         #for i in range(GA_POPSIZE)
           #  population[i].string =
           #rando init ben unknown bound values
+    def roulette_selection(weights):
+        '''performs weighted selection or roulette wheel selection on a list
+        and returns the index selected from the list'''
 
+        # sort the weights in ascending order
+        sorted_indexed_weights = sorted(enumerate(weights), key=operator.itemgetter(1));
+        indices, sorted_weights = zip(*sorted_indexed_weights);
+        # calculate the cumulative probability
+        tot_sum = sum(sorted_weights)
+        prob = [x / tot_sum for x in sorted_weights]
+        cum_prob = np.cumsum(prob)
+        # select a random a number in the range [0,1]
+        random_num = random()
+
+        for index_value, cum_prob_value in zip(indices, cum_prob):
+            if random_num < cum_prob_value:
+                return index_value
+def RWS(population, buffer, size):
+    '''Roulette wheel selection'''
+    selections = []
+    fit = [(1/agent.fitness) for agent in population]
+    for i in range(size):
+        index = roulette_selection(fit)
+        selections.append(population[index])
+
+    return selections + [i for i in buffer[size:]]
 
 if __name__ == "__main__":
 
@@ -200,7 +225,7 @@ if __name__ == "__main__":
 
         problem.mate(population, buffer, "UNIFORM")
         population, buffer = problem.swap(population, buffer)
-
+#e
     elapsed = timeit.default_timer() - start2
     clock_ticks = time.time() - start1
 
