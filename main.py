@@ -5,6 +5,7 @@ import time
 import timeit
 
 from matplotlib import pyplot as plt
+import numpy as np
 
 GA_POPSIZE = 2048  # genome population size
 GA_MAXITER = 16384  # maximum iterations (generations)
@@ -21,11 +22,69 @@ class GA_struct:
         self.string = string
         self.fitness = fitness
 
+# class Particle:
+#
+#     # This class represents a particle in the Particle Swarm Optimization algorithm
+#
+#     def __init__(self, pos):
+#         self.position = pos
+#         self.velocity = [random.random() for i in range(len(pos))]
+#         self.personal_best = pos
+#
+#     def update_velocity(self, global_best, c1, c2, w):
+#
+#         # simply update the new velocity using the formula that we learned in the lecture
+#
+#         for i in range(len(self.position)):
+#             first_component = c1 * random.random() * (ord(self.personal_best[i]) - ord(self.position[i]))
+#             second_component = c2 * random.random() * (ord(global_best[i]) - ord(self.position[i]))
+#             self.velocity[i] = self.velocity[i] * w + first_component + second_component
+#
+#     def update_position(self):
+#
+#         # simply update the new position by adding velocity
+#
+#         new_pos = ""
+#         for i in range(len(self.position)):
+#             new_pos += chr((ord(self.position[i]) + int(self.velocity[i])) % 256)
+#         self.position = new_pos
+class Particle:
+    def __init__(self, position, velocity):
+        self.position = position
+        self.personal_best = position
+        self.velocity = velocity
+
+    def velocity_update(self, w, c1, c2, global_best):
+
+        for i in range(len(self.position)):
+            first_component = c1 * random.random() * (ord(self.personal_best[i]) - ord(self.position[i]))
+            second_component = c2 * random.random() * (ord(global_best[i]) - ord(self.position[i]))
+            self.velocity[i] = self.velocity[i] * w + first_component + second_component
+
+        # for i in range(len(self.velocity)):
+        #     cognitive = ord(self.personal_best[i]) - ord(self.position[i])
+        #     social = ord(global_best[i]) - ord(self.position[i])
+        #     self.velocity[i] = w * self.velocity[i] + c1 * random.random() * cognitive + c2 * random.random() * social
+
+    def position_update(self):
+
+        new_pos = ""
+        for i in range(len(self.position)):
+            new_pos += chr((ord(self.position[i]) + int(self.velocity[i])) % 256)
+
+        self.position = new_pos
+
+
+        # updated_position = ""
+        # for i in range(len(self.velocity)):
+        #     updated_position += chr((ord(self.position[i]) + int(self.velocity[i])) % 256)
+        #
+        # self.position = updated_position
+
 
 class GeneticAlgorithm:
 
-    @staticmethod
-    def init_population(population: list, buffer: list):
+    def init_population(self, population: list, buffer: list):
 
         tsize = len(GA_TARGET)
 
@@ -36,11 +95,12 @@ class GeneticAlgorithm:
                 citizen.string += chr(random.randrange(0, 90) + 32)
 
             population[i] = citizen
+
+        self.population = population
         #buffer.resize(GA_POPSIZE);
         return
 
-    def calc_fitness(self, population: list[GA_struct]):
-
+    def calc_fitness(self, genome=None):
         target = GA_TARGET
         tsize = len(target)
 
@@ -49,14 +109,21 @@ class GeneticAlgorithm:
             fitness = 0
 
             for j in range(tsize):
-                fitness = fitness + abs(ord(population[i].string[j]) - ord(target[j]))
+                if genome:
+                    fitness = fitness + abs(ord(genome[j]) - ord(target[j]))
 
-            population[i].fitness = fitness
+                else:
+                    fitness = fitness + abs(ord(self.population[i].string[j]) - ord(target[j]))
+
+            if genome:
+                return fitness
+
+            self.population[i].fitness = fitness
 
         return
 
-    def sort_by_fitness(self, population: list[GA_struct]):
-        population.sort(key=lambda x: x.fitness)
+    def sort_by_fitness(self):
+        self.population.sort(key=lambda x: x.fitness)
         return
 
     def elitism(self, population: list[GA_struct], buffer: list[GA_struct], esize):
@@ -112,34 +179,33 @@ class GeneticAlgorithm:
 
         return
 
-    def print_best(self, gav: list[GA_struct]):
-        print("Best: " + gav[0].string + " fitness: " + " (" + str(gav[0].fitness) + ")")
+    def print_best(self):
+        print("Best: " + self.population[0].string + " fitness: " + " (" + str( self.population[0].fitness) + ")")
         return
 
     def swap(self, population: list[GA_struct], buffer: list[GA_struct]):
 
         return buffer, population
 
-    def calcAVG(self, population: list[GA_struct]):
+    def calcAVG(self):
 
         sum = 0
 
-        for i in range(len(population)):
-            sum += population[i].fitness
+        for i in range(len(self.population)):
+            sum += self.population[i].fitness
 
         return sum/GA_POPSIZE
 
-    def calcStd(self, population: list[GA_struct]):
+    def calcStd(self):
 
         fitness = []
 
-        for i in range(len(population)):
-            fitness.append(population[i].fitness)
+        for i in range(len(self.population)):
+            fitness.append(self.population[i].fitness)
 
         return statistics.stdev(fitness)
 
-
-    def BulPgia(population):
+    def BulPgia(self, population):
         for i in population:
             fitness = 0
             for j in range(len(GA_TARGET)):
@@ -152,36 +218,126 @@ class GeneticAlgorithm:
 
             i.fitness = fitness
 
-   # def PSO(self, population):
-        #for i in range(GA_POPSIZE)
-          #  population[i].string =
-          #rando init ben unknown bound values
-    def roulette_selection(weights):
-        '''performs weighted selection or roulette wheel selection on a list
-        and returns the index selected from the list'''
+    # def PSO(self):
+    #
+    #     particles = [] * GA_POPSIZE
+    #     found = False
+    #
+    #     self.calc_fitness()
+    #
+    #     # initializing the particles
+    #     for item in self.population:
+    #         velocity = list(np.random.uniform(low=0, high=1, size=len(item.string)))
+    #         particles.append(Particle(item.string, item.fitness, velocity))
+    #
+    #     global_best = self.population[0].string
+    #
+    #     for j in range(GA_MAXITER):
+    #         for i in range(GA_POPSIZE):
+    #             objective = particles[i].fitness
+    #             if objective == 0:
+    #                 global_best = particles[i].position
+    #                 found = True
+    #                 break
+    #             else:
+    #                 curr_fitness = self.calc_fitness(global_best)
+    #                 if objective < curr_fitness:
+    #                     global_best = particles[i].position
+    #
+    #                 if objective < particles[i].fitness:
+    #                     particles[i].personal_best = particles[i].position
+    #
+    #                 # if objective < particles[i].fitness:
+    #                 #     particles[i].personal_best = particles[i].position
+    #                 # if objective < global_best:
+    #                 #     global_best = objective
+    #
+    #                 w = 0.5 * (GA_MAXITER - i) / GA_MAXITER + 0.4
+    #                 c1 = -2 * i / GA_MAXITER + 2.5
+    #                 c2 = 2 * i / GA_MAXITER + 0.5
+    #                 for particle in particles:
+    #                     particle.velocity_update(w, c1, c2, global_best)
+    #
+    #                     particle.position_update()
+    #
+    #         if found:
+    #             break
+    #
+    #     return global_best
+        import random
 
-        # sort the weights in ascending order
-        sorted_indexed_weights = sorted(enumerate(weights), key=operator.itemgetter(1));
-        indices, sorted_weights = zip(*sorted_indexed_weights);
-        # calculate the cumulative probability
-        tot_sum = sum(sorted_weights)
-        prob = [x / tot_sum for x in sorted_weights]
-        cum_prob = np.cumsum(prob)
-        # select a random a number in the range [0,1]
-        random_num = random()
 
-        for index_value, cum_prob_value in zip(indices, cum_prob):
-            if random_num < cum_prob_value:
-                return index_value
-def RWS(population, buffer, size):
-    '''Roulette wheel selection'''
-    selections = []
-    fit = [(1/agent.fitness) for agent in population]
-    for i in range(size):
-        index = roulette_selection(fit)
-        selections.append(population[index])
 
-    return selections + [i for i in buffer[size:]]
+
+    def pso(self):
+        start1 = time.time()
+        start2 = timeit.default_timer()
+
+        particles = [] * GA_POPSIZE
+        found = False
+
+        self.calc_fitness()
+
+        #initializing the particles
+        for item in population:
+            velocity = list(np.random.uniform(low=0, high=1, size=len(item.string)))
+            particles.append(Particle(item.string, velocity))
+
+        global_best = self.population[0].string
+
+
+
+        for i in range(GA_MAXITER):
+            for particle in particles:
+                objective = self.calc_f(particle.position)
+                if objective == 0:
+                    global_best = particle.position
+                    found = True
+                    break
+
+
+                curr_fitness = self.calc_f(particle.personal_best)
+                if objective < curr_fitness:
+                    particle.personal_best = particle.position
+
+                best_fitness = self.calc_f(global_best)
+                if objective < best_fitness:
+                    global_best = particle.position
+
+            if found:
+                break
+            w = 0.5 * (GA_MAXITER - i) / GA_MAXITER + 0.4
+            c1 = -2 * i / GA_MAXITER + 2.5
+            c2 = 2 * i / GA_MAXITER + 0.5
+
+            for item in particles:
+                item.velocity_update(w, c1, c2, global_best)
+                item.position_update()
+
+
+
+
+        elapsed = timeit.default_timer() - start2
+        clock_ticks = time.time() - start1
+        print("BestPSOOOO: " + global_best + " (" + str(min(objective, best_fitness)) + ")")
+        print("Overall PSO runtime: " + str(elapsed) + " Ticks: " + str(clock_ticks))
+        return global_best
+
+    def calc_f(self, position):
+        target = GA_TARGET
+        tsize = len(target)
+
+        for i in range(GA_POPSIZE):
+
+            fitness = 0
+
+            for j in range(tsize):
+                fitness = fitness + abs(ord(position[j]) - ord(target[j]))
+
+
+        return fitness
+
+
 
 if __name__ == "__main__":
 
@@ -193,35 +349,31 @@ if __name__ == "__main__":
     population = pop_alpha
     buffer = pop_beta
     start_t = time.time()
-
+    pso = problem.pso()
+    print("PSO ISSSSSSSSS ")
+    print(pso)
     for i in range(GA_MAXITER):
 
         time2 = time.time()  # clock ticks
-        problem.calc_fitness(population)
-        problem.sort_by_fitness(population)
-        problem.print_best(population)
-        print("mean of generation is: " + str(problem.calcAVG(population)))
-        print("standard deviation of generation is: " + str(problem.calcStd(population)))
+        problem.calc_fitness()
+        problem.sort_by_fitness()
+        problem.print_best()
+        print("mean of generation is: " + str(problem.calcAVG()))
+        print("standard deviation of generation is: " + str(problem.calcStd()))
 
         clock_ticks = time.time() - time2
         E_T = time.time() - start_t
-
+        print("Clock ticks: " + str(clock_ticks))
+        print("Elapsed time: " + str(E_T))
 
         fitness = []
         for j in range(len(population)):
             fitness.append(population[j].fitness)
         
-        print("Clock ticks: " + str(clock_ticks))
-        print("Elapsed time: " + str(E_T))
-        
         plt.xlabel('Fitness')
         plt.ylabel('Number of Genomes')
         plt.hist(fitness)
       # plt.show()
-
-
-        
-
 
         if population[0].fitness == 0:
             break
@@ -229,10 +381,7 @@ if __name__ == "__main__":
         problem.mate(population, buffer, "UNIFORM")
         population, buffer = problem.swap(population, buffer)
 
-
-
     E_T = time.time() - start_t
     clock_ticks = time.time() - time2
-
 
     print("Elapsed time: " + str(E_T) + " Clock Ticks: " + str(clock_ticks))
