@@ -22,32 +22,7 @@ class GA_struct:
         self.string = string
         self.fitness = fitness
 
-# class Particle:
-#
-#     # This class represents a particle in the Particle Swarm Optimization algorithm
-#
-#     def __init__(self, pos):
-#         self.position = pos
-#         self.velocity = [random.random() for i in range(len(pos))]
-#         self.personal_best = pos
-#
-#     def update_velocity(self, global_best, c1, c2, w):
-#
-#         # simply update the new velocity using the formula that we learned in the lecture
-#
-#         for i in range(len(self.position)):
-#             first_component = c1 * random.random() * (ord(self.personal_best[i]) - ord(self.position[i]))
-#             second_component = c2 * random.random() * (ord(global_best[i]) - ord(self.position[i]))
-#             self.velocity[i] = self.velocity[i] * w + first_component + second_component
-#
-#     def update_position(self):
-#
-#         # simply update the new position by adding velocity
-#
-#         new_pos = ""
-#         for i in range(len(self.position)):
-#             new_pos += chr((ord(self.position[i]) + int(self.velocity[i])) % 256)
-#         self.position = new_pos
+
 class Particle:
     def __init__(self, position, velocity):
         self.position = position
@@ -55,31 +30,17 @@ class Particle:
         self.velocity = velocity
 
     def velocity_update(self, w, c1, c2, global_best):
-
-        for i in range(len(self.position)):
-            first_component = c1 * random.random() * (ord(self.personal_best[i]) - ord(self.position[i]))
-            second_component = c2 * random.random() * (ord(global_best[i]) - ord(self.position[i]))
-            self.velocity[i] = self.velocity[i] * w + first_component + second_component
-
-        # for i in range(len(self.velocity)):
-        #     cognitive = ord(self.personal_best[i]) - ord(self.position[i])
-        #     social = ord(global_best[i]) - ord(self.position[i])
-        #     self.velocity[i] = w * self.velocity[i] + c1 * random.random() * cognitive + c2 * random.random() * social
+        for i in range(len(self.velocity)):
+            cognitive = ord(self.personal_best[i]) - ord(self.position[i])
+            social = ord(global_best[i]) - ord(self.position[i])
+            self.velocity[i] = w * self.velocity[i] + c1 * random.random() * cognitive + c2 * random.random() * social
 
     def position_update(self):
+        updated_position = ""
+        for i in range(len(self.velocity)):
+            updated_position += chr((ord(self.position[i]) + int(self.velocity[i])) % 256)
 
-        new_pos = ""
-        for i in range(len(self.position)):
-            new_pos += chr((ord(self.position[i]) + int(self.velocity[i])) % 256)
-
-        self.position = new_pos
-
-
-        # updated_position = ""
-        # for i in range(len(self.velocity)):
-        #     updated_position += chr((ord(self.position[i]) + int(self.velocity[i])) % 256)
-        #
-        # self.position = updated_position
+        self.position = updated_position
 
 
 class GeneticAlgorithm:
@@ -218,125 +179,58 @@ class GeneticAlgorithm:
 
             i.fitness = fitness
 
-    # def PSO(self):
-    #
-    #     particles = [] * GA_POPSIZE
-    #     found = False
-    #
-    #     self.calc_fitness()
-    #
-    #     # initializing the particles
-    #     for item in self.population:
-    #         velocity = list(np.random.uniform(low=0, high=1, size=len(item.string)))
-    #         particles.append(Particle(item.string, item.fitness, velocity))
-    #
-    #     global_best = self.population[0].string
-    #
-    #     for j in range(GA_MAXITER):
-    #         for i in range(GA_POPSIZE):
-    #             objective = particles[i].fitness
-    #             if objective == 0:
-    #                 global_best = particles[i].position
-    #                 found = True
-    #                 break
-    #             else:
-    #                 curr_fitness = self.calc_fitness(global_best)
-    #                 if objective < curr_fitness:
-    #                     global_best = particles[i].position
-    #
-    #                 if objective < particles[i].fitness:
-    #                     particles[i].personal_best = particles[i].position
-    #
-    #                 # if objective < particles[i].fitness:
-    #                 #     particles[i].personal_best = particles[i].position
-    #                 # if objective < global_best:
-    #                 #     global_best = objective
-    #
-    #                 w = 0.5 * (GA_MAXITER - i) / GA_MAXITER + 0.4
-    #                 c1 = -2 * i / GA_MAXITER + 2.5
-    #                 c2 = 2 * i / GA_MAXITER + 0.5
-    #                 for particle in particles:
-    #                     particle.velocity_update(w, c1, c2, global_best)
-    #
-    #                     particle.position_update()
-    #
-    #         if found:
-    #             break
-    #
-    #     return global_best
-        import random
-
-
-
-
     def pso(self):
-        start1 = time.time()
-        start2 = timeit.default_timer()
+        start1 = time.time()  # clock ticks
+        start2 = timeit.default_timer()  # elapsed time
 
+        self.calc_fitness()
         particles = [] * GA_POPSIZE
         found = False
 
-        self.calc_fitness()
-
-        #initializing the particles
-        for item in population:
+        # initializing the particles
+        for item in self.population:
             velocity = list(np.random.uniform(low=0, high=1, size=len(item.string)))
             particles.append(Particle(item.string, velocity))
 
         global_best = self.population[0].string
-
-
-
+        # Do while end condition or we've reached the max number of iterations
         for i in range(GA_MAXITER):
             for particle in particles:
-                objective = self.calc_f(particle.position)
-                if objective == 0:
+                objective = self.calc_fitness(particle.position)  # we calculate the objective of the particle
+                if objective == 0:  # this means we've found the optimal solution
                     global_best = particle.position
                     found = True
                     break
+                else:
+                    curr_fitness = self.calc_fitness(global_best)
+                    # update the global best if we've found a better solution than the global best
+                    if objective < curr_fitness:
+                        global_best = particle.position
 
-
-                curr_fitness = self.calc_f(particle.personal_best)
-                if objective < curr_fitness:
-                    particle.personal_best = particle.position
-
-                best_fitness = self.calc_f(global_best)
-                if objective < best_fitness:
-                    global_best = particle.position
+                    curr_fitness = self.calc_fitness(particle.personal_best)
+                    # update the personal best if we've found a better solution than the personal best of this particle
+                    if objective < curr_fitness:
+                        particle.personal_best = particle.position
 
             if found:
                 break
-            w = 0.5 * (GA_MAXITER - i) / GA_MAXITER + 0.4
+
+            # update the inertia weight
+            w = (0.6 * (i - GA_MAXITER) / (GA_MAXITER ** 2)) + 0.6
             c1 = -2 * i / GA_MAXITER + 2.5
             c2 = 2 * i / GA_MAXITER + 0.5
 
-            for item in particles:
-                item.velocity_update(w, c1, c2, global_best)
-                item.position_update()
-
-
-
+            # for each particle, update velocity, and update position
+            for particle in particles:
+                particle.velocity_update(w, c1, c2, global_best)
+                particle.position_update()
 
         elapsed = timeit.default_timer() - start2
         clock_ticks = time.time() - start1
-        print("BestPSOOOO: " + global_best + " (" + str(min(objective, best_fitness)) + ")")
+
+        print("Best PSO: " + global_best + " (" + str(min(objective, curr_fitness)) + ")")
         print("Overall PSO runtime: " + str(elapsed) + " Ticks: " + str(clock_ticks))
         return global_best
-
-    def calc_f(self, position):
-        target = GA_TARGET
-        tsize = len(target)
-
-        for i in range(GA_POPSIZE):
-
-            fitness = 0
-
-            for j in range(tsize):
-                fitness = fitness + abs(ord(position[j]) - ord(target[j]))
-
-
-        return fitness
-
 
 
 if __name__ == "__main__":
@@ -350,8 +244,7 @@ if __name__ == "__main__":
     buffer = pop_beta
     start_t = time.time()
     pso = problem.pso()
-    print("PSO ISSSSSSSSS ")
-    print(pso)
+
     for i in range(GA_MAXITER):
 
         time2 = time.time()  # clock ticks
