@@ -354,6 +354,20 @@ class GeneticAlgorithm:
         print("Overall PSO runtime: " + str(elapsed) + " Ticks: " + str(clock_ticks))
         return global_best
 
+    def PMX(p1, p2):
+        parents = set()
+        r = random.randrange(0, len(p1))
+        tmp1 = p1[r]
+        tmp2 = p2[r]
+        for i in range(len(p1)):
+            if p1[i] == tmp1:
+                p1[i] = tmp2
+            if p2[i] == tmp2:
+                p2[i] = tmp1
+        parents.add(p1)
+        parents.add(p2)
+        return parents
+
 
 if __name__ == "__main__":
 
