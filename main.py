@@ -368,6 +368,39 @@ class GeneticAlgorithm:
         parents.add(p2)
         return parents
 
+    def search_for_num(self, num):
+        for i in range(len(self)):
+            if self[i] == num:
+                return i
+
+    def CX(p1, p2):
+        parents = set()
+        p2new = None
+        p1new = None
+        indx = 0
+        next_index = 0
+        t = 0
+        while next_index <= (len(p1)):
+            start = p1[next_index]
+            next_index += 1
+            while p2[indx] != start:
+                num = p2[indx]
+                indx = p1.search_for_num(p1, num)
+                if indx == next_index:
+                    next_index += 1
+                if t % 2 == 0:
+                    p1new[indx] = p1[indx]
+                    p2new[indx] = p2[indx]
+                else:
+                    p1new[indx] = p2[indx]
+                    p2new[indx] = p1[indx]
+
+            t += 1
+        parents.add(p1new)
+        parents.add(p2new)
+        return parents
+
+
 
 if __name__ == "__main__":
 
