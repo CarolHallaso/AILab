@@ -412,7 +412,7 @@ class GeneticAlgorithm:
 if __name__ == "__main__":
 
     problem = GeneticAlgorithm()
-    random.seed()
+    #random.seed()
     pop_alpha = [None] * GA_POPSIZE
     pop_beta = [None] * GA_POPSIZE
     problem.init_population(pop_alpha, pop_beta)
