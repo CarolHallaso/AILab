@@ -380,12 +380,16 @@ class GeneticAlgorithm:
         indx = 0
         next_index = 0
         t = 0
+        sum = 0
         while next_index <= (len(p1)):
             start = p1[next_index]
+            if p1[indx] == -1:
+                break
             next_index += 1
-            while p2[indx] != start:
-                num = p2[indx]
+            num = p2[indx]
+            while num != start:
                 indx = p1.search_for_num(p1, num)
+                num = p2[indx]
                 if indx == next_index:
                     next_index += 1
                 if t % 2 == 0:
@@ -394,6 +398,9 @@ class GeneticAlgorithm:
                 else:
                     p1new[indx] = p2[indx]
                     p2new[indx] = p1[indx]
+                p1[indx] = -1
+                p2[indx] = -1
+                sum += 1
 
             t += 1
         parents.add(p1new)
