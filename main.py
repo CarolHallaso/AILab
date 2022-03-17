@@ -89,7 +89,8 @@ class GeneticAlgorithm:
         return
 
     def sort_by_fitness(self):
-        self.population.sort(key=lambda x: x.fitness-x.age)
+        self.population.sort(key=lambda x: x.fitness)
+        # self.population.sort(key=lambda x: x.fitness-x.age)
         return
 
     def elitism(self, population: list[GA_struct], buffer: list[GA_struct], esize):
@@ -107,27 +108,41 @@ class GeneticAlgorithm:
         member.string = string
         return
 
-    def mate(self, population, buffer, type, selection_method = None):
+    def mate(self, population, parents, buffer, type, selection_method = None):
 
         esize = int(GA_POPSIZE * GA_ELITRATE)
         tsize = len(GA_TARGET)
         self.elitism(population, buffer, esize)
 
+        parents_idx = 0
+        # if selection_method == "rws":
+        #     parents = problem.RWS(problem, buffer, GA_POPSIZE - esize, indices, cumulative_p)
 
         # mate the rest
         for i in range(esize, GA_POPSIZE):
 
-            i1 = random.randrange(0, GA_POPSIZE // 2)
-            i2 = random.randrange(0, GA_POPSIZE // 2)
+            if selection_method != "rws" and selection_method != "sus":
+                i1 = random.randrange(0, GA_POPSIZE // 2)
+                i2 = random.randrange(0, GA_POPSIZE // 2)
 
-            if selection_method == "sus":
-                parents = self.sus(population, 2)
-                i1, i2 = parents[0], parents[1]
+            # if selection_method == "sus":
+            #     parents = self.sus(population, 2)
+            #     i1, i2 = parents[0], parents[1]
 
-            if selection_method == "rws":
-                # self.buffer = problem.RWS(problem, buffer, GA_POPSIZE)
-                i1 = self.rws(population)
-                i2 = self.rws(population)
+            if i != (GA_POPSIZE - 1) and selection_method == "sus":
+                i1 = parents[parents_idx]
+                i2 = parents[parents_idx + 1]
+                parents_idx += 1
+
+            if i != (GA_POPSIZE - 1) and selection_method == "rws":
+                i1 = parents[parents_idx]
+                i2 = parents[parents_idx + 1]
+                parents_idx += 1
+
+            # if selection_method == "rws":
+            #     # self.buffer = problem.RWS(problem, buffer, esize)
+            #     i1 = self.rws(population)
+            #     i2 = self.rws(population)
 
                 # i1 = self.roulette_selection(fitness)
                 # i2 = self.roulette_selection(fitness)
@@ -213,7 +228,7 @@ class GeneticAlgorithm:
 
             i.fitness = fitness
 
-    def rws(self, population):
+    def rws(self, population, chromosome_probabilities, size):
         # prob = []
         # fit_sum = 0
         # for genome in population:
@@ -231,52 +246,44 @@ class GeneticAlgorithm:
         #             return population[i + 1].string
 
         # Computes the totallity of the population fitness
-        population_fitness = sum([chromosome.fitness for chromosome in population])
-
-        # Computes for each chromosome the probability
-        chromosome_probabilities = [chromosome.fitness / population_fitness for chromosome in population]
-
-        # Making the probabilities for a minimization problem
-        chromosome_probabilities = (1 - np.array(chromosome_probabilities)) / (len(population) - 1)
+        # population_fitness = sum([chromosome.fitness for chromosome in population])
+        #
+        # # Computes for each chromosome the probability
+        # chromosome_probabilities = [chromosome.fitness / population_fitness for chromosome in population]
+        #
+        # # Making the probabilities for a minimization problem
+        # chromosome_probabilities = (1 - np.array(chromosome_probabilities)) / (len(population) - 1)
 
         # Selects one chromosome based on the computed probabilities
-        return np.random.choice(population, p = chromosome_probabilities)
+        parents = []
+        for i in range(size):
+            parents.append(np.random.choice(population, p = chromosome_probabilities))
+        return parents
 
-    def roulette_selection(self, fitnesses):
-        # sort the weights in ascending order
-        sorted_indexed_weights = sorted(enumerate(fitnesses), key=operator.itemgetter(1))
-        indices, sorted_weights = zip(*sorted_indexed_weights)
-        # calculate the cumulative probability
-        total_sum = sum(sorted_weights)
-        probability = []
-        for weight in sorted_weights:
-            probability.append(weight/total_sum)
-        cumulative_p = np.cumsum(probability)
+    def roulette_selection(self, indices, cumulative_p):
 
-        # select a random a number in the range [0,1]
         random_num = np.random.uniform(low=0, high=1)
 
         for index_value, cum_prob_value in zip(indices, cumulative_p):
             if random_num < cum_prob_value:
                 return index_value
 
-    def RWS(self, population, buffer, size):
+    def RWS(self, population, fitnesses, buffer, size, indices, cumulative_p):
         """
         Roulette wheel selection
         """
         selections = []
-        fitnesses = []
 
-        for genome in population.population:
-            fitness = (1 / genome.fitness)
-            fitnesses.append(fitness)
+        # for genome in population.population:
+        #     fitness = (1 / genome.fitness)
+        #     fitnesses.append(fitness)
 
         for i in range(size):
-            index = population.roulette_selection(fitnesses)
+            index = population.roulette_selection(indices, cumulative_p)
             selections.append(population.population[index])
-        print("in RWS")
 
-        return selections + buffer[size:]
+        # return selections + buffer[size:]
+        return selections
 
     def get_subset_sum(self, population, index):
         sum = 0
@@ -408,6 +415,29 @@ class GeneticAlgorithm:
         print("Overall PSO runtime: " + str(elapsed) + " Ticks: " + str(clock_ticks))
         return global_best
 
+    def init_roulette(self, population):
+        fitnesses = []
+        for item in population:
+            fitnesses.append(item.fitness)
+        # sort the weights in ascending order
+        sorted_indexed_weights = sorted(enumerate(fitnesses), key=operator.itemgetter(1))
+        indices, sorted_weights = zip(*sorted_indexed_weights)
+        # calculate the cumulative probability
+        total_sum = sum(sorted_weights)
+        probability = []
+        for weight in sorted_weights:
+            probability.append(weight / total_sum)
+
+        cumulative_p = np.cumsum(probability)
+        esize = int(GA_POPSIZE * GA_ELITRATE)
+
+        fitnesses = []
+        for genome in population:
+            fitness = (1 / genome.fitness) if genome.fitness else 0
+            fitnesses.append(fitness)
+
+        return cumulative_p, esize, fitnesses, indices
+
 
 if __name__ == "__main__":
 
@@ -418,13 +448,17 @@ if __name__ == "__main__":
 
     problem.init_population(pop_alpha, pop_beta)
 
-
     population = pop_alpha
     buffer = pop_beta
     start_t = time.time()
 
     pso = problem.pso()
 
+
+    problem.calc_fitness()
+    cumulative_p, esize, fitnesses, indices = problem.init_roulette(population)
+
+    # select a random a number in the range [0,1]
     for i in range(GA_MAXITER):
 
         time2 = time.time()  # clock ticks
@@ -440,19 +474,22 @@ if __name__ == "__main__":
         print("Clock ticks: " + str(clock_ticks))
         print("Elapsed time: " + str(E_T))
 
-        fitness = []
-        for j in range(len(population)):
-            fitness.append(population[j].fitness)
+        # fitness = []
+        # for j in range(len(population)):
+        #     fitness.append(population[j].fitness)
 
-        plt.xlabel('Fitness')
-        plt.ylabel('Number of Genomes')
-        plt.hist(fitness)
+        # plt.xlabel('Fitness')
+        # plt.ylabel('Number of Genomes')
+        # plt.hist(fitness)
         # plt.show()
 
         if population[0].fitness == 0:
             break
 
-        buffer = problem.mate(population, buffer, "SINGLE", "sus")
+        parents = problem.RWS(problem, fitnesses, buffer, GA_POPSIZE - esize, indices, cumulative_p)
+        # parents = problem.sus(population, GA_POPSIZE - esize)
+        # parents = problem.rws(population, chromosome_probabilities, GA_POPSIZE - esize)
+        buffer = problem.mate(population, parents, buffer, "DOUBLE", "rws")
         population, buffer = problem.swap(population, buffer)
 
         for genome in population:
