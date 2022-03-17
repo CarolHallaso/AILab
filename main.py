@@ -412,6 +412,7 @@ if __name__ == "__main__":
     start_t = time.time()
     pso = problem.pso()
 
+
     for i in range(GA_MAXITER):
 
         time2 = time.time()  # clock ticks
