@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 GA_POPSIZE = 2048  # genome population size
-GA_MAXITER = 16384  # maximum iterations (generations)
+GA_MAXITER = 16384  # maximum iterations
 GA_ELITRATE = 0.1  # elitism rate
 GA_MUTATIONRATE = 0.25  # mutation rate
 GA_MUTATION = sys.maxsize * GA_MUTATIONRATE
@@ -48,18 +48,17 @@ class GeneticAlgorithm:
 
     def init_population(self, population: list, buffer: list):
 
-        tsize = len(GA_TARGET)
+        size = len(GA_TARGET)
 
         for i in range(GA_POPSIZE):
             citizen = GA_struct("", 0)
 
-            for j in range(tsize):
+            for j in range(size):
                 citizen.string += chr(random.randrange(0, 90) + 32)
 
             population[i] = citizen
 
         self.population = population
-        # buffer.resize(GA_POPSIZE);
         return
 
     def calc_fitness(self, genome=None):
@@ -89,18 +88,15 @@ class GeneticAlgorithm:
         return
 
     def elitism(self, population: list[GA_struct], buffer: list[GA_struct], esize):
-        # todo: check
-        # buffer[:esize] = population[:esize]
         temp = population[:esize].copy()
         buffer[:esize] = temp
         return
 
     def mutate(self, member: GA_struct):
-
-        t_size = len(member.string)
-        ipos = random.randrange(0, t_size - 1)
+        size = len(member.string)
+        position = random.randrange(0, size - 1)
         delta = random.randrange(0, 90) + 32
-        string = member.string[: ipos] + chr((ord(member.string[ipos]) + delta) % 122) + member.string[ipos + 1:]
+        string = member.string[: position] + chr((ord(member.string[position]) + delta) % 122) + member.string[position + 1:]
         member.string = string
         return
 
@@ -110,7 +106,6 @@ class GeneticAlgorithm:
         tsize = len(GA_TARGET)
         self.elitism(population, buffer, esize)
 
-        # mate the rest
         for i in range(esize, GA_POPSIZE):
 
             i1 = random.randrange(0, GA_POPSIZE // 2)
@@ -147,20 +142,16 @@ class GeneticAlgorithm:
         return
 
     def swap(self, population: list[GA_struct], buffer: list[GA_struct]):
-
         return buffer, population
 
     def calcAVG(self):
-
         sum = 0
-
         for i in range(len(self.population)):
             sum += self.population[i].fitness
 
         return sum / GA_POPSIZE
 
     def calcStd(self):
-
         fitness = []
 
         for i in range(len(self.population)):
