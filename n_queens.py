@@ -63,6 +63,7 @@ class GeneticAlgorithm:
         return
 
     def mutate(self, agent):
+        # to mutate we choose a position randomly and change it to a random character
         target_size = QUEENS
         ipos = randint(0, target_size - 1)
         delta = randint(0, QUEENS - 1)
@@ -72,11 +73,13 @@ class GeneticAlgorithm:
         esize = int(GA_POPSIZE * GA_ELITRATE)
         target_size = QUEENS
         self.elitism(population, buffer, esize)
-
+        # we choose the parents depending on the method specified by the given input "selection_method"
+        # and to each pair of parents we do a cross over according to the given input "cross_over_type"
         parents_idx = 0
         if selection_method == "sus":
             parents = self.sus(population, GA_POPSIZE - esize)
 
+        # mate the rest
         for i in range(esize, GA_POPSIZE):
 
             if selection_method == None:
@@ -88,17 +91,19 @@ class GeneticAlgorithm:
                 i2 = parents[parents_idx + 1]
                 parents_idx += 1
 
-            if selection_method == "rws":
+            if selection_method == "rws":  # we choose the parents according to the RWS algo we learned
                 i1 = self.rws(population, probabilities)
                 i2 = self.rws(population, probabilities)
 
-            if selection_method == "tournament":
+            if selection_method == "tournament":  # we choose the parents according to the tournament selection algo we learned
                 k = 3
                 i1, i2 = self.tournament_selection(population, k)
 
+            # we choose the parents according to the minimal conflict heuristic
             if selection_method == "min_conf" and i<GA_POPSIZE-1:
                 i1 = self.miniConf(population[i].string, QUEENS, iters=100)
                 i2 = self.miniConf(population[i+1].string, QUEENS, iters=100)
+
             if cross_over_type == "SINGLE":
                 pos = random.randrange(1, target_size)
                 if selection_method == "min_conf":
@@ -150,7 +155,7 @@ class GeneticAlgorithm:
         return buffer
 
     def calcAVG(self):
-
+        # calculates and returns the average fitness of the population
         sum = 0
 
         for i in range(len(population)):
@@ -159,7 +164,7 @@ class GeneticAlgorithm:
         return sum / GA_POPSIZE
 
     def calcStd(self):
-
+        # calculates and returns the STD of the population
         fitness = []
 
         for i in range(len(population)):
@@ -169,6 +174,7 @@ class GeneticAlgorithm:
 
     def rws(self, population, probabilities):
         # Roulette wheel selection algorithm
+        # implements the pseudocode we saw in class
         rndNumber = random.random()
         offset = 0.0
         for i in range(GA_POPSIZE):
@@ -183,6 +189,7 @@ class GeneticAlgorithm:
         return sum
 
     def sus(self, population, N):
+        # Stochastic universal sampling
         sum = 0
         for i in range(len(population)):
             sum += 1 / population[i].fitness if population[i].fitness else 0
@@ -205,6 +212,7 @@ class GeneticAlgorithm:
         return list(parents)
 
     def tournament_selection(self, population, k):
+        # we randomly choose a sample from the population with size k and choose the two best ones
         sample = []
         for i in range(k):
             sample.append(population[random.randrange(0, len(population) - 1)])
@@ -216,30 +224,8 @@ class GeneticAlgorithm:
     def positive_random(rng, conflicts, filter):
         return random.choice([i for i in range(rng) if filter(conflicts[i])])
 
-    def inversion_mutation(self):
-        index1 = random.randrange(0, len(self) - 1)
-        index2 = random.randrange(index1, len(self))
-        size = index2 - index1
-        while i <= size / 2:
-            tmp = self[index1]
-            self[index1] = self[index2]
-            self[index2] = tmp
-        return self
-
-    def scramble_mutation(self):
-        index1 = random.randrange(0, len(self) - 1)
-        index2 = random.randrange(index1, len(self))
-        size = index2 - index1
-        helper = self[index1:index2 + 1]
-        random.shuffle(helper)
-        i = index1
-        j = 0
-        while i < index2 + 1:
-            self[i] = helper[j]
-            j += 1
-        return self
-
     def init_roulette(self, population):
+        # build the roulette with the probabilities being according to the fitnesses
         problem.calc_fitness_queens(population)
         probs = []
         total_fitness = 0
@@ -253,6 +239,7 @@ class GeneticAlgorithm:
         return random.choice([i for i in range(num_rows) if filter(li[i])])
 
     def miniConf(self, solution, num_rows, iters=100):
+        # the minimal conflict heuristic chooses solution that minimizes the conflicts(collisions)
         for k in range(iters):
             confs = self.find_conflicts(solution, num_rows)
             if sum(confs) == 0:
@@ -286,10 +273,10 @@ if __name__ == "__main__":
     pop_alpha = [None] * GA_POPSIZE
     pop_beta = [None] * GA_POPSIZE
 
-    population = problem.initPop(pop_alpha, pop_beta)
+    population = problem.initPop(pop_alpha, pop_beta)  #initialize the population
 
     buffer = pop_beta
-    start_t = time.time()
+    start_t = time.time()  # starting time
 
 
     probabilities = problem.init_roulette(population)
@@ -321,7 +308,7 @@ if __name__ == "__main__":
         if population[0].fitness == 0:
             break
 
-        buffer = problem.mate(population, buffer, "DOUBLE", "rws", probabilities)  # mate
+        buffer = problem.mate(population, buffer, "DOUBLE", "tournament")  # mate
         population, buffer = buffer, population
 
         for genome in population:
