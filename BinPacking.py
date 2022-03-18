@@ -143,22 +143,32 @@ def firstFit(objects, capacity):
 
 if __name__ == "__main__":
 
-    random.seed()
-    num_of_objects = 50
-    capacity = 100
-    objects = [0] * num_of_objects
-    for i in range(num_of_objects):
-        # each object weigh can be <= capacity
-        objects[i] = random.randrange(1, capacity + 1)
+    for k in range (4):
+        num_of_objects = 50
+        capacity = 100
+        print("For problem number " + str(k+1))
+        print("Number of objects is: " + str(num_of_objects))
+        print("Bins max capacity is: " + str(capacity))
+        random.seed()
+        objects = [0] * num_of_objects
+        for i in range(num_of_objects):
+            # each object weigh can be <= capacity
+            objects[i] = random.randrange(1, capacity + 1)
 
-    print("Number of bins required in - First fit Algorithm:")
-    result1 = firstFit(objects, capacity)
-    print(result1)
+        print("The objects we are trying to pack in this problem")
+        print(objects)
+        result1 = firstFit(objects, capacity)
+        print("Number of bins required in - First fit Algorithm:")
+        print(result1)
 
-    problem = BinPacking(objects, capacity)
-    result2 = problem.genetic(objects, capacity)
-    print("Number of bins required in - Genetic Algorithm:")
-    print(result2)
+        problem = BinPacking(objects, capacity)
+        result2 = problem.genetic(objects, capacity)
+        print("Number of bins required in - Genetic Algorithm:")
+        print(result2)
+
+
+
+
 
 
 
