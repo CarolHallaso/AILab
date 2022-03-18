@@ -17,6 +17,7 @@ GA_MUTATIONRATE = 0.25  # mutation rate
 GA_MUTATION = sys.maxsize * GA_MUTATIONRATE
 GA_TARGET = "Hello world!"
 
+
 class GA_struct:
 
     # Citizens of our Population
@@ -55,7 +56,6 @@ class GeneticAlgorithm:
         for i in range(GA_POPSIZE):
             citizen = GA_struct("", 0)
 
-
             for j in range(tsize):
                 citizen.string += chr(random.randrange(0, 90) + 32)
 
@@ -63,7 +63,6 @@ class GeneticAlgorithm:
 
         self.population = population
         return
-
 
     def calc_fitness(self, genome=None):
         target = GA_TARGET
@@ -181,16 +180,13 @@ class GeneticAlgorithm:
         return buffer, population
 
     def calcAVG(self):
-
         sum = 0
-
         for i in range(len(self.population)):
             sum += self.population[i].fitness
 
         return sum / GA_POPSIZE
 
     def calcStd(self):
-
         fitness = []
 
         for i in range(len(self.population)):
@@ -346,6 +342,61 @@ class GeneticAlgorithm:
             probs.append(population[i].fitness / total_fitness)
         return probs
 
+    def PMX(self, p1, p2):
+        parents = set()
+        r = random.randrange(0, len(p1))
+        tmp1 = p1[r]
+        tmp2 = p2[r]
+        for i in range(len(p1)):
+            if p1[i] == tmp1:
+                p1[i] = tmp2
+            if p2[i] == tmp2:
+                p2[i] = tmp1
+        parents.add(p1)
+        parents.add(p2)
+        return parents
+
+    def search_for_num(self, num):
+        for i in range(len(self)):
+            if self[i] == num:
+                return i
+
+    def CX(self, p1, p2):
+        parents = set()
+        p2new = None
+        p1new = None
+        indx = 0
+        next_index = 0
+        t = 0
+        sum = 0
+        while next_index <= (len(p1)):
+            start = p1[next_index]
+            if p1[indx] == -1:
+                break
+            next_index += 1
+            num = p2[indx]
+            while num != start:
+                indx = p1.search_for_num(p1, num)
+                num = p2[indx]
+                if indx == next_index:
+                    next_index += 1
+                if t % 2 == 0:
+                    p1new[indx] = p1[indx]
+                    p2new[indx] = p2[indx]
+                else:
+                    p1new[indx] = p2[indx]
+                    p2new[indx] = p1[indx]
+                p1[indx] = -1
+                p2[indx] = -1
+                sum += 1
+
+            t += 1
+        parents.add(p1new)
+        parents.add(p2new)
+        return parents
+
+
+
 if __name__ == "__main__":
 
     problem = GeneticAlgorithm()
@@ -367,6 +418,7 @@ if __name__ == "__main__":
 
         time2 = time.time()  # clock ticks
 
+        # problem.calc_fitness()
         problem.BulPgia(population)
         problem.sort_by_fitness()
         problem.print_best()
