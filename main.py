@@ -1,3 +1,4 @@
+import copy
 import operator
 import sys
 import random
@@ -7,13 +8,14 @@ import timeit
 
 from matplotlib import pyplot as plt
 import numpy as np
+from numpy import cumsum, resize
 
 GA_POPSIZE = 2048  # genome population size
-GA_MAXITER = 16384  # maximum iterations
+GA_MAXITER = 16384  # maximum iterations (generations)
 GA_ELITRATE = 0.1  # elitism rate
 GA_MUTATIONRATE = 0.25  # mutation rate
 GA_MUTATION = sys.maxsize * GA_MUTATIONRATE
-GA_TARGET = "Hello world! "
+GA_TARGET = "Hello world!"
 
 
 class GA_struct:
@@ -22,6 +24,7 @@ class GA_struct:
     def __init__(self, string, fitness):
         self.string = string
         self.fitness = fitness
+        self.age = 0
 
 
 class Particle:
@@ -46,14 +49,14 @@ class Particle:
 
 class GeneticAlgorithm:
 
-    def init_population(self, population: list, buffer: list):
+    def init_population(self, population, buffer):
 
-        size = len(GA_TARGET)
+        tsize = len(GA_TARGET)
 
         for i in range(GA_POPSIZE):
             citizen = GA_struct("", 0)
 
-            for j in range(size):
+            for j in range(tsize):
                 citizen.string += chr(random.randrange(0, 90) + 32)
 
             population[i] = citizen
@@ -85,6 +88,7 @@ class GeneticAlgorithm:
 
     def sort_by_fitness(self):
         self.population.sort(key=lambda x: x.fitness)
+        # self.population.sort(key=lambda x: x.fitness-x.age)
         return
 
     def elitism(self, population: list[GA_struct], buffer: list[GA_struct], esize):
@@ -93,55 +97,86 @@ class GeneticAlgorithm:
         return
 
     def mutate(self, member: GA_struct):
-        size = len(member.string)
-        position = random.randrange(0, size - 1)
+        t_size = len(member.string)
+        ipos = random.randrange(0, t_size - 1)
         delta = random.randrange(0, 90) + 32
-        string = member.string[: position] + chr((ord(member.string[position]) + delta) % 122) + member.string[position + 1:]
+        string = member.string[: ipos] + chr((ord(member.string[ipos]) + delta) % 122) + member.string[ipos + 1:]
         member.string = string
         return
 
-    def mate(self, population: list[GA_struct], buffer: list[GA_struct], type):
+    def mate(self, population, buffer, type, selection_method = None, probabilities = None):
 
         esize = int(GA_POPSIZE * GA_ELITRATE)
         tsize = len(GA_TARGET)
         self.elitism(population, buffer, esize)
 
+        parents_idx = 0
+        if selection_method == "sus":
+            parents = self.sus(population, GA_POPSIZE - esize)
+
+        # mate the rest
         for i in range(esize, GA_POPSIZE):
 
-            i1 = random.randrange(0, GA_POPSIZE // 2)
-            i2 = random.randrange(0, GA_POPSIZE // 2)
+            if selection_method == None:
+                i1 = random.randrange(0, GA_POPSIZE // 2)
+                i2 = random.randrange(0, GA_POPSIZE // 2)
+
+            if i != (GA_POPSIZE - 1) and selection_method == "sus":
+                i1 = parents[parents_idx]
+                i2 = parents[parents_idx + 1]
+                parents_idx += 1
+
+            if selection_method == "rws":
+                i1 = self.rws(population, probabilities)
+                i2 = self.rws(population, probabilities)
+
+            if selection_method == "tournament":
+                k = 3
+                i1, i2 = self.tournament_selection(population, k)
 
             if type == "SINGLE":
                 pos = random.randrange(0, tsize)
-                buffer[i] = GA_struct(population[i1].string[0: pos] + population[i2].string[pos:], 0)
+                if selection_method != None:
+                    buffer[i] = GA_struct(i1.string[0: pos] + i2.string[pos:], 0)
+                else:
+                    buffer[i] = GA_struct(population[i1].string[0: pos] + population[i2].string[pos:], 0)
 
             elif type == "DOUBLE":
                 pos1 = random.randrange(0, tsize - 2)
                 pos2 = random.randrange(pos1 + 1, tsize - 1)
-                buffer[i] = GA_struct(
-                    population[i1].string[0: pos1] + population[i2].string[pos1:pos2] + population[i1].string[pos2:], 0)
+                if selection_method != None:
+                    buffer[i] = GA_struct(i1.string[0: pos1] + i2.string[pos1:pos2] + i1.string[pos2:], 0)
+                else:
+                    buffer[i] = GA_struct(population[i1].string[0: pos1] + population[i2].string[pos1:pos2] + population[i1].string[pos2:], 0)
 
             elif type == "UNIFORM":
                 gen = ""
                 for j in range(tsize):
                     r = random.randrange(0, 2)
                     if r == 0:
-                        gen = gen + population[i1].string[j]
+                        if selection_method != None:
+                            gen = gen + i1.string[j]
+                        else:
+                            gen = gen + population[i1].string[j]
 
                     else:
-                        gen = gen + population[i2].string[j]
+                        if selection_method != None:
+                            gen = gen + i2.string[j]
+                        else:
+                            gen = gen + population[i2].string[j]
                 buffer[i] = GA_struct(gen, 0)
 
             if random.randrange(sys.maxsize) < GA_MUTATION:
                 self.mutate(buffer[i])
 
-        return
+        return buffer
 
     def print_best(self):
         print("Best: " + self.population[0].string + " fitness: " + " (" + str(self.population[0].fitness) + ")")
         return
 
     def swap(self, population: list[GA_struct], buffer: list[GA_struct]):
+
         return buffer, population
 
     def calcAVG(self):
@@ -159,7 +194,7 @@ class GeneticAlgorithm:
 
         return statistics.stdev(fitness)
 
-    def BulPgia(population):
+    def BulPgia(self, population):
         for i in population:
             fitness = 0
             for j in range(len(GA_TARGET)):
@@ -172,52 +207,36 @@ class GeneticAlgorithm:
 
             i.fitness = fitness
 
-    def roulette_selection(fitnesses):
-        # sort the weights in ascending order
-        sorted_indexed_weights = sorted(enumerate(fitnesses), key=operator.itemgetter(1))
-        indices, sorted_weights = zip(*sorted_indexed_weights)
-        # calculate the cumulative probability
-        tot_sum = sum(sorted_weights)
-        prob = [x / tot_sum for x in sorted_weights]
-        cum_prob = np.cumsum(prob)
-        # select a random a number in the range [0,1]
-        random_num = random()
+    def rws(self, population, probabilities):
+        # Roulette wheel selection algorithm
+        rndNumber = random.random()
+        offset = 0.0
+        for i in range(GA_POPSIZE):
+            offset += probabilities[i]
+            if rndNumber < offset:
+                return population[i]
 
-        for index_value, cum_prob_value in zip(indices, cum_prob):
-            if random_num < cum_prob_value:
-                return index_value
-
-    def RWS(population, buffer, size):
-        '''Roulette wheel selection'''
-        selections = []
-        fitnesses = [(1 / GA_struct.fitness) for GA_struct in population]
-        for i in range(size):
-            index = population.roulette_selection(fitnesses)
-            selections.append(population[index])
-
-        return selections + [i for i in buffer[size:]]
-
-    def get_subset_sum(population, index):
+    def get_subset_sum(self, population, index):
         sum = 0
         for i in range(index):
             sum += population[i].fitness
         return sum
 
-    def sus(population, N):  # mn el internet
+    def sus(self, population, N):
         sum = 0
         for i in range(len(population)):
-            sum += 1 / population[i].fitness
+            sum += 1 / population[i].fitness if population[i].fitness else 0
         point_distance = sum / N
         start_point = random.uniform(0, point_distance)
         points = [start_point + i * point_distance for i in range(N)]
         parents = set()
         while len(parents) < N:
-            random.shuffle(population)  # mfhmtsh lshu b7aji?
+            random.shuffle(population)
             i = 0
             while i < len(points) and len(parents) < N:
                 j = 0
                 while j < len(population):
-                    if population.get_subset_sum(population, j) < points[i]:
+                    if self.get_subset_sum(population, j) < points[i]:
                         parents.add(population[j])
                         break
                     j += 1
@@ -225,51 +244,19 @@ class GeneticAlgorithm:
 
         return list(parents)
 
-    def tournementSelection(population, buffer, size):
-        Selections = []  # array of selections
-        populationSize = len(population)
-        for i in range(size):
-            first = population[random.randrange(0, populationSize - 1)]  # pick first genom
-            second = population[random.randrange(0, populationSize - 1)]  # pick second genom
+    def tournament_selection(self, population, k):
+        sample = []
+        for i in range(k):
+            sample.append(population[random.randrange(0, len(population) - 1)])
 
-            if first.fitness < second.fitness:
-                Selections.append(GA_struct(first.string, first.fitness))
-            else:
-                Selections.append(GA_struct(second.string, second.fitness))
+        sample.sort(key=lambda x: x.fitness)
+        return sample[0], sample[1]
 
-        return Selections + [i for i in buffer[size:]]
+    @staticmethod
+    def positive_random(rng, conflicts, filter):
+        return random.choice([i for i in range(rng) if filter(conflicts[i])])
 
-    def aging(population, buffer, size):
-        Best = 5
-        for p in population:
-            p.fitness += (p.age - Best) ** 2  # add age bonus
-        return population.RWS(population, buffer, size)
-
-    def miniConf(soln, nr, iters=1000):
-        def posRand(li, filt):
-            return random.choice([i for i in range(nr) if filt(li[i])])
-
-        for k in range(iters):
-            confs = soln.find_conflicts(soln, nr)
-            if sum(confs) == 0:
-                return soln
-            col = posRand(confs, lambda elt: elt > 0)
-            vconfs = [soln.hits(soln, nr, col, row) for row in range(nr)]
-            soln[col] = posRand(vconfs, lambda elt: elt == min(vconfs))
-
-    def find_conflicts(soln, nr):
-        return [soln.hits(soln, nr, col, soln[col]) for col in range(nr)]
-
-    def hits(soln, nr, col, row):
-        total = 0
-        for i in range(nr):
-            if i == col:
-                continue
-            if soln[i] == row or abs(i - col) == abs(soln[i] - row):
-                total += 1
-        return total
-
-    def inversion_mutation(self):  # 7sb lkovets elle shay 7tu mfrod kmn n3'yr m7l lblock elle mnnn2e bs bl internet m7tot bs nsawe hepo5..
+    def inversion_mutation(self):
         index1 = random.randrange(0, len(self) - 1)
         index2 = random.randrange(index1, len(self))
         size = index2 - index1
@@ -287,7 +274,7 @@ class GeneticAlgorithm:
         random.shuffle(helper)
         i = index1
         j = 0
-        while i < index2 + 1:  # afkr fe tre2a aktr y3ela
+        while i < index2 + 1:
             self[i] = helper[j]
             j += 1
         return self
@@ -345,7 +332,17 @@ class GeneticAlgorithm:
         print("Overall PSO runtime: " + str(elapsed) + " Ticks: " + str(clock_ticks))
         return global_best
 
-    def PMX(p1, p2):
+    def init_roulette(self, population):
+        problem.calc_fitness()
+        probs = []
+        total_fitness = 0
+        for i in range(GA_POPSIZE):
+            total_fitness += population[i].fitness
+        for i in range(GA_POPSIZE):
+            probs.append(population[i].fitness / total_fitness)
+        return probs
+
+    def PMX(self, p1, p2):
         parents = set()
         r = random.randrange(0, len(p1))
         tmp1 = p1[r]
@@ -364,7 +361,7 @@ class GeneticAlgorithm:
             if self[i] == num:
                 return i
 
-    def CX(p1, p2):
+    def CX(self, p1, p2):
         parents = set()
         p2new = None
         p1new = None
@@ -403,20 +400,26 @@ class GeneticAlgorithm:
 if __name__ == "__main__":
 
     problem = GeneticAlgorithm()
-    #random.seed()
+    random.seed()
     pop_alpha = [None] * GA_POPSIZE
     pop_beta = [None] * GA_POPSIZE
+
     problem.init_population(pop_alpha, pop_beta)
+
     population = pop_alpha
     buffer = pop_beta
     start_t = time.time()
+
     pso = problem.pso()
 
+    probabilities = problem.init_roulette(population)
 
     for i in range(GA_MAXITER):
 
         time2 = time.time()  # clock ticks
-        problem.calc_fitness()
+
+        # problem.calc_fitness()
+        problem.BulPgia(population)
         problem.sort_by_fitness()
         problem.print_best()
         print("mean of generation is: " + str(problem.calcAVG()))
@@ -427,22 +430,26 @@ if __name__ == "__main__":
         print("Clock ticks: " + str(clock_ticks))
         print("Elapsed time: " + str(E_T))
 
-        fitness = []
-        for j in range(len(population)):
-            fitness.append(population[j].fitness)
+        # fitness = []
+        # for j in range(len(population)):
+        #     fitness.append(population[j].fitness)
 
-        plt.xlabel('Fitness')
-        plt.ylabel('Number of Genomes')
-        plt.hist(fitness)
+        # plt.xlabel('Fitness')
+        # plt.ylabel('Number of Genomes')
+        # plt.hist(fitness)
         # plt.show()
 
         if population[0].fitness == 0:
             break
 
-        problem.mate(population, buffer, "UNIFORM")
+        buffer = problem.mate(population, buffer, "DOUBLE", "rws", probabilities)
         population, buffer = problem.swap(population, buffer)
+
+        for genome in population:
+            genome.age += 1
 
     E_T = time.time() - start_t
     clock_ticks = time.time() - time2
 
     print("Elapsed time: " + str(E_T) + " Clock Ticks: " + str(clock_ticks))
+
