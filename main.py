@@ -15,7 +15,7 @@ GA_MAXITER = 16384  # maximum iterations (generations)
 GA_ELITRATE = 0.1  # elitism rate
 GA_MUTATIONRATE = 0.25  # mutation rate
 GA_MUTATION = sys.maxsize * GA_MUTATIONRATE
-GA_TARGET = "Hello world! "
+GA_TARGET = "Hello world!"
 
 class GA_struct:
 
@@ -62,8 +62,6 @@ class GeneticAlgorithm:
             population[i] = citizen
 
         self.population = population
-        # resize(buffer, GA_POPSIZE) # ???????
-        # buffer.resize(GA_POPSIZE)
         return
 
 
@@ -95,8 +93,6 @@ class GeneticAlgorithm:
         return
 
     def elitism(self, population: list[GA_struct], buffer: list[GA_struct], esize):
-        # todo: check
-        # buffer[:esize] = population[:esize]
         temp = population[:esize].copy()
         buffer[:esize] = temp
         return
@@ -230,7 +226,7 @@ class GeneticAlgorithm:
             sum += population[i].fitness
         return sum
 
-    def sus(self, population, N):  # mn el internet
+    def sus(self, population, N):
         sum = 0
         for i in range(len(population)):
             sum += 1 / population[i].fitness if population[i].fitness else 0
@@ -239,7 +235,7 @@ class GeneticAlgorithm:
         points = [start_point + i * point_distance for i in range(N)]
         parents = set()
         while len(parents) < N:
-            random.shuffle(population)  # mfhmtsh lshu b7aji?
+            random.shuffle(population)
             i = 0
             while i < len(points) and len(parents) < N:
                 j = 0
@@ -257,14 +253,14 @@ class GeneticAlgorithm:
         for i in range(k):
             sample.append(population[random.randrange(0, len(population) - 1)])
 
-        sample.sort(key=lambda x: x.fitness-x.age)
+        sample.sort(key=lambda x: x.fitness)
         return sample[0], sample[1]
 
     @staticmethod
     def positive_random(rng, conflicts, filter):
         return random.choice([i for i in range(rng) if filter(conflicts[i])])
 
-    def inversion_mutation(self):  # 7sb lkovets elle shay 7tu mfrod kmn n3'yr m7l lblock elle mnnn2e bs bl internet m7tot bs nsawe hepo5..
+    def inversion_mutation(self):
         index1 = random.randrange(0, len(self) - 1)
         index2 = random.randrange(index1, len(self))
         size = index2 - index1
@@ -282,7 +278,7 @@ class GeneticAlgorithm:
         random.shuffle(helper)
         i = index1
         j = 0
-        while i < index2 + 1:  # afkr fe tre2a aktr y3ela
+        while i < index2 + 1:
             self[i] = helper[j]
             j += 1
         return self
@@ -353,7 +349,7 @@ class GeneticAlgorithm:
 if __name__ == "__main__":
 
     problem = GeneticAlgorithm()
-    random.seed()  # whats this
+    random.seed()
     pop_alpha = [None] * GA_POPSIZE
     pop_beta = [None] * GA_POPSIZE
 
@@ -394,7 +390,7 @@ if __name__ == "__main__":
         if population[0].fitness == 0:
             break
 
-        buffer = problem.mate(population, buffer, "SINGLE", "rws", probabilities)
+        buffer = problem.mate(population, buffer, "DOUBLE", "rws", probabilities)
         population, buffer = problem.swap(population, buffer)
 
         for genome in population:
