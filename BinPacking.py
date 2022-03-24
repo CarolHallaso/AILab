@@ -173,8 +173,8 @@ class BinPacking:
             population, buffer = self.swap(population, buffer)
 
             # uniform decay mutation
-            # rate = GA_MUTATIONRATE * (1 / GA_MAXITER)
-            # GA_MUTATIONRATE = GA_MUTATIONRATE - rate
+            # rate = MUTATIONRATE * (1 / MAXITER)
+            # MUTATIONRATE = MUTATIONRATE - rate
 
             # Adaptive decrease function mutation
             pmax = 0.3
