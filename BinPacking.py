@@ -1,3 +1,4 @@
+import math
 import random
 import sys
 import time
@@ -8,6 +9,7 @@ MAXITER = 100  # maximum iterations
 ELITRATE = 0.1  # elitism rate
 MUTATIONRATE = 0.25  # mutation rate
 MUTATION = sys.maxsize * MUTATIONRATE
+e = 2.71828182846
 
 class GA_struct:
 
@@ -94,6 +96,41 @@ class BinPacking:
 
         return buffer, population
 
+    def kendall_tau_distance(self, values1, values2):
+        """Compute the Kendall tau distance."""
+        n = len(values1)
+        assert len(values2) == n, "Both lists have to be of equal length"
+        i, j = np.meshgrid(np.arange(n), np.arange(n))
+        a = np.argsort(values1)
+        b = np.argsort(values2)
+        ndisordered = np.logical_or(np.logical_and(a[i] < a[j], b[i] > b[j]),
+                                    np.logical_and(a[i] > a[j], b[i] < b[j])).sum()
+        return ndisordered / 2
+
+    def calculate_distance(self, first, second):
+
+        diff = problem.kendall_tau_distance(first.permutation, second.permutation)
+
+        return diff
+
+    def get_num_of_genomes_with_fitness(self, population, fitness):
+        i = 0
+        num = 0
+        for i in range(len(population)):
+            if population[i].fitness == fitness:
+                num += 1
+                i += 1
+
+        return num
+
+    def calculate_genetic_diversity(self, population):
+        ans = 0
+        for i in range(len(population)):
+
+            for j in range(len(population)):
+                ans += self.calculate_distance(population[i], population[j])
+        return ans / len(population)
+
     def genetic(self, objects, capacity):
         time0 = time.time()
         random.seed()
@@ -102,13 +139,49 @@ class BinPacking:
         self.init_population(pop1)
         population = pop1
         buffer = pop2
+        generation_num = 0
         for i in range(MAXITER):
+            generation_num += 1
             self.calc_fitness(population)
             self.sort_by_fitness(population)
             print("Genetic algorithm -")
             self.print_best(population)
+
+            best_fitness = population[0].fitness
+            number_of_best_genomes = self.get_num_of_genomes_with_fitness(population, best_fitness)
+            mid = len(population) / 2
+            mid = math.floor(mid)
+            mid_fitness = population[mid].fitness
+            num_of_mid_genomes = self.get_num_of_genomes_with_fitness(population, mid_fitness)
+            print("best fitness = " + str(best_fitness))
+            print("num of best fitness = " + str(number_of_best_genomes))
+            print("mid fitness = " + str(mid_fitness))
+            print("num of mid fitness = " + str(num_of_mid_genomes))
+            prob_best = number_of_best_genomes / len(population)
+            prob_mid = num_of_mid_genomes / len(population)
+            selection_pressure = 0
+            if prob_mid != 0:
+                selection_pressure = prob_best / prob_mid
+
+            print("selection pressure:" + str(selection_pressure))
+
+            #genetic_diversity = self.calculate_genetic_diversity(population)
+
+            #print("Genetic Diversity: " + str(genetic_diversity))
+
             self.mate(population, buffer)
             population, buffer = self.swap(population, buffer)
+
+            # uniform decay mutation
+            # rate = GA_MUTATIONRATE * (1 / GA_MAXITER)
+            # GA_MUTATIONRATE = GA_MUTATIONRATE - rate
+
+            # Adaptive decrease function mutation
+            pmax = 0.3
+            r = 0.5
+            helper1 = 2 * (pmax ** 2) * (e ** (r * generation_num))
+            helper2 = pmax + (pmax * (e ** (r * generation_num)))
+            MUTATIONRATE = helper1 / helper2
 
         elapsed_time = time.time() - time0
         print("Genetic Algorithm Elapsed time = " + str(elapsed_time))
