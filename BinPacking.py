@@ -185,6 +185,23 @@ class BinPacking:
                 num_of_species += 1
                 speciation.append([population[i]])
 
+    def get_random_one_of_best(self, population):
+        size = int(POPSIZE * ELITRATE)
+        temp = population[:size].copy()
+        r = random.randrange(0, len(temp))
+        return temp[r]
+
+
+    def random_immigrants(self, population):
+        esize = int(POPSIZE * ELITRATE)
+        worst_start_index = int((1 - ELITRATE) * len(population))
+
+        while worst_start_index != len(population):
+            good_one = self.get_random_one_of_best(population)
+            #self.inverse_mutation(good_one)
+            population[worst_start_index] = good_one
+            worst_start_index += 1
+
     def genetic(self, objects, capacity):
         time0 = time.time()
         random.seed()
@@ -236,6 +253,7 @@ class BinPacking:
             helper1 = 2 * (pmax ** 2) * (e ** (r * generation_num))
             helper2 = pmax + (pmax * (e ** (r * generation_num)))
             MUTATIONRATE = helper1 / helper2
+            #problem.random_immigrants(population)
 
         elapsed_time = time.time() - time0
         print("Genetic Algorithm Elapsed time = " + str(elapsed_time))
