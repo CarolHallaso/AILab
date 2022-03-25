@@ -27,6 +27,7 @@ class GA_struct:
         self.string = string
         self.fitness = fitness
         self.age = 0
+        self.species = -1
 
 
 class GeneticAlgorithm:
@@ -71,6 +72,35 @@ class GeneticAlgorithm:
         delta = randint(0, QUEENS - 1)
         agent.string = agent.string[:ipos] + [(agent.string[ipos] + delta) % QUEENS] + agent.string[ipos + 1:]
 
+    def get_two_random_parents_with_same_species(self, population, species):
+        count = 0
+        genomes = []
+        for i in range(len(population)):
+            if population[i].species == species:
+                genomes.append(population[i])
+                count += 1
+        r1 = random.randrange(0, count)
+        r2 = random.randrange(0, count)
+        return genomes[r1], genomes[r2]
+
+    def get_num_of_species(self, population):
+        species = []
+        for i in range(len(population)):
+            found = 0
+            for j in range(len(species)):
+                if population[i].species == species[j]:
+                    found = 1
+            if found == 0:
+                species.append(population[i].species)
+        return len(species)
+
+    def get_num_of_genomes_in_species(self, population, species):  # afkr fsh 7aji
+        count = 0
+        for i in range(len(population)):
+            if population[i].species == species:
+                count += 1
+        return count
+
     def mate(self, population, buffer, cross_over_type, selection_method=None, probabilities=None):
         esize = int(GA_POPSIZE * GA_ELITRATE)
         target_size = QUEENS
@@ -92,6 +122,11 @@ class GeneticAlgorithm:
                 i1 = parents[parents_idx]
                 i2 = parents[parents_idx + 1]
                 parents_idx += 1
+
+            if selection_method == "threshold":
+                num_of_species = self.get_num_of_species(population)
+                s = random.randrange(0, num_of_species)
+                i1, i2 = self.get_two_random_parents_with_same_species(population, s)
 
             if selection_method == "rws":  # we choose the parents according to the RWS algo we learned
                 i1 = self.rws(population, probabilities)
@@ -301,6 +336,28 @@ class GeneticAlgorithm:
             for j in range(len(population)):
                 ans += self.calculate_distance(population[i], population[j])
         return ans / len(population)
+
+    def threshold(self, population):
+        threshold = GA_POPSIZE * 0.3
+        speciation = [[]] * 30
+        num_of_species = 30
+        for i in range(len(population)):
+            check = 0
+            for j in range(len(speciation)):
+
+                for x in range(len(speciation[j])):
+
+                    if self.calculate_distance(population[i], speciation[j][x]) <= threshold:
+                        check += 1
+
+                if check == len(speciation[j]):
+                    speciation[j].append(population[i])
+                    population[i].species = j
+
+            if population[i].species == -1:
+                population[i].species = num_of_species
+                num_of_species += 1
+                speciation.append([population[i]])
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ class GA_struct:
     def __init__(self, permutation, fitness):
         self.permutation = permutation
         self.fitness = fitness
+        self.species = -1
 
 class BinPacking:
 
@@ -76,12 +77,43 @@ class BinPacking:
         citizen.permutation[index] = b
         return citizen.permutation
 
-    def mate(self, population: list[GA_struct], buffer: list[GA_struct]):
+    def get_two_random_parents_with_same_species(self, population, species):
+        count = 0
+        genomes = []
+        for i in range(len(population)):
+            if population[i].species == species:
+                genomes.append(population[i])
+                count += 1
+        r1 = random.randrange(0, count)
+        r2 = random.randrange(0, count)
+        return genomes[r1], genomes[r2]
+
+    def get_num_of_species(self, population):
+        species = []
+        for i in range(len(population)):
+            found = 0
+            for j in range(len(species)):
+                if population[i].species == species[j]:
+                    found = 1
+            if found == 0:
+                species.append(population[i].species)
+        return len(species)
+
+    def mate(self, population: list[GA_struct], buffer: list[GA_struct], selection_method=None):
         size = int(POPSIZE * ELITRATE)
         self.elitism(population, buffer, size)
+        indx1 = -1
+        indx2 = -2
         for i in range(size, POPSIZE):
-            indx1 = random.randrange(1, self.NumOfObjects)
-            indx2 = random.randrange(indx1, self.NumOfObjects)
+            if selection_method == None:
+                indx1 = random.randrange(1, self.NumOfObjects)
+                indx2 = random.randrange(indx1, self.NumOfObjects)
+
+            elif selection_method == "threshold":
+                num_of_species = self.get_num_of_species(population)
+                s = random.randrange(0, num_of_species)
+                indx1, indx2 = self.get_two_random_parents_with_same_species(population, s)
+
             c1 = random.randrange(0, POPSIZE // 2)
             c2 = random.randrange(0, POPSIZE // 2)
 
@@ -130,6 +162,28 @@ class BinPacking:
             for j in range(len(population)):
                 ans += self.calculate_distance(population[i], population[j])
         return ans / len(population)
+
+    def threshold(self, population):
+        threshold = POPSIZE * 0.3
+        speciation = [[]] * 30
+        num_of_species = 30
+        for i in range(len(population)):
+            check = 0
+            for j in range(len(speciation)):
+
+                for x in range(len(speciation[j])):
+
+                    if self.calculate_distance(population[i], speciation[j][x]) <= threshold:
+                        check += 1
+
+                if check == len(speciation[j]):
+                    speciation[j].append(population[i])
+                    population[i].species = j
+
+            if population[i].species == -1:
+                population[i].species = num_of_species
+                num_of_species += 1
+                speciation.append([population[i]])
 
     def genetic(self, objects, capacity):
         time0 = time.time()
