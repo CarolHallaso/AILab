@@ -590,6 +590,24 @@ class GeneticAlgorithm:
                 num_of_species += 1
                 speciation.append([population[i]])
 
+    def get_random_one_of_best(self, population):
+        size = int(GA_POPSIZE * GA_ELITRATE)
+        temp = population[:size].copy()
+        r = random.randrange(0, len(temp))
+        return temp[r]
+
+
+    def random_immigrants(self, population):
+        esize = int(GA_POPSIZE * GA_ELITRATE)
+        worst_start_index = int((1 - GA_ELITRATE) * len(population))
+
+        while worst_start_index != len(population):
+            good_one = self.get_random_one_of_best(population)
+            self.inverse_mutation(good_one)
+            population[worst_start_index] = good_one
+            worst_start_index += 1
+
+
 
 
 
@@ -687,6 +705,8 @@ if __name__ == "__main__":
         helper1 = 2 * (pmax ** 2) * (e ** (r * generation_num))
         helper2 = pmax + (pmax * (e ** (r*generation_num)))
         GA_MUTATIONRATE = helper1 / helper2
+
+        problem.random_immigrants(population)
 
 
 
