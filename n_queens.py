@@ -372,9 +372,25 @@ class GeneticAlgorithm:
 
         while worst_start_index != len(population):
             good_one = self.get_random_one_of_best(population)
-            #self.inverse_mutation(good_one)
+            self.inverse_mutation(good_one)
             population[worst_start_index] = good_one
             worst_start_index += 1
+
+    def inverse_mutation(self, member):
+        # implements the inversion mutation we learned
+        p = member.string
+        index1 = random.randrange(0, len(p))
+        index2 = random.randrange(index1, len(p))
+        r = index2 - index1
+        for i in range(r):
+            tmp = p[index1]
+            p[index1] = p[index2]
+            p[index2] = tmp
+            index1 += 1
+            index2 -= 1
+            i += 1
+
+        member.string = p
 
 
 if __name__ == "__main__":
@@ -461,7 +477,7 @@ if __name__ == "__main__":
             helper1 = 2 * (pmax ** 2) * (e ** (r * generation_num))
             helper2 = pmax + (pmax * (e ** (r * generation_num)))
             GA_MUTATIONRATE = helper1 / helper2
-            problem.random_immigrants(population)
+            #problem.random_immigrants(population)
 
         E_T = time.time() - start_t
         clock_ticks = time.time() - time2
