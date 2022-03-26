@@ -198,9 +198,25 @@ class BinPacking:
 
         while worst_start_index != len(population):
             good_one = self.get_random_one_of_best(population)
-            #self.inverse_mutation(good_one)
+            self.inverse_mutation(good_one)
             population[worst_start_index] = good_one
             worst_start_index += 1
+
+    def inverse_mutation(self, member):
+        # implements the inversion mutation we learned
+        p = member.permutation
+        index1 = random.randrange(0, len(p))
+        index2 = random.randrange(index1, len(p))
+        r = index2 - index1
+        for i in range(r):
+            tmp = p[index1]
+            p[index1] = p[index2]
+            p[index2] = tmp
+            index1 += 1
+            index2 -= 1
+            i += 1
+
+        member.permutation = p
 
     def genetic(self, objects, capacity):
         time0 = time.time()
@@ -253,7 +269,7 @@ class BinPacking:
             helper1 = 2 * (pmax ** 2) * (e ** (r * generation_num))
             helper2 = pmax + (pmax * (e ** (r * generation_num)))
             MUTATIONRATE = helper1 / helper2
-            #problem.random_immigrants(population)
+            problem.random_immigrants(population)
 
         elapsed_time = time.time() - time0
         print("Genetic Algorithm Elapsed time = " + str(elapsed_time))
@@ -288,7 +304,7 @@ def firstFit(objects, capacity):
 
 if __name__ == "__main__":
 
-    for k in range (4):
+    for k in range (2):
         num_of_objects = 50
         capacity = 100
         print("For problem number " + str(k+1))
