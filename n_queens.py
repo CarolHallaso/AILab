@@ -428,7 +428,7 @@ if __name__ == "__main__":
         if population[0].fitness == 0:
             break
 
-        buffer = problem.mate(population, buffer, "DOUBLE", "tournament")  # mate
+        buffer = problem.mate(population, buffer, "SINGLE", "tournament")  # mate
         population, buffer = buffer, population
 
         for genome in population:

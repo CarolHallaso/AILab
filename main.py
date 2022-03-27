@@ -12,8 +12,6 @@ from matplotlib import pyplot as plt
 import numpy as np
 from numpy import cumsum, resize
 from scipy.spatial.distance import cdist
-from sklearn.cluster import KMeans
-from yellowbrick.cluster import KElbowVisualizer
 from yellowbrick.cluster import KElbowVisualizer
 from sklearn.cluster import KMeans
 
@@ -151,47 +149,53 @@ class GeneticAlgorithm:
         return len(species)
 
     def clustering_speciation(self, population):
-        K = range(1, 30)
+        k = 2
+        diff = 1
+        epsilon = 0.05
         x = []
-        distortions = []
         inertias = []
-        mapping1 = {}
-        mapping2 = {}
 
         for i in range(len(population)):
             x.append(population[i].fitness)
 
         data = np.array(x)
         X = data.reshape(-1, 1)
-        for k in K:
+
+        while k < len(population) and diff > epsilon:
             # Building and fitting the model
             kmeanModel = KMeans(n_clusters=k).fit(X)
-            kmeanModel.fit(X)
+            kmeanModel.predict(X)
+            # kmeanModel.fit(X)
 
-            distortions.append(sum(np.min(cdist(X, kmeanModel.cluster_centers_,
-                                                'euclidean'), axis=1)) / X.shape[0])
             inertias.append(kmeanModel.inertia_)
+            if k - 2 > 0:  # if not the first iteration we can update diff
+                diff = inertias[k-3] - inertias[k-2]
+            k += 1
 
-            mapping1[k] = sum(np.min(cdist(X, kmeanModel.cluster_centers_,
-                                           'euclidean'), axis=1)) / X.shape[0]
-            mapping2[k] = kmeanModel.inertia_
-        plt.plot(K, inertias, 'bx-')
-        plt.xlabel('Values of K')
-        plt.ylabel('Inertia')
-        plt.title('The Elbow Method using Inertia')
-        plt.show()
+        # o = range(2, k)
+        # plt.plot(o, inertias, 'bx-')
+        # plt.xlabel('Values of K')
+        # plt.ylabel('Inertia')
+        # plt.title('The Elbow Method using Inertia')
+        # plt.show()
 
-        kmeanModel = KElbowVisualizer(KMeans(), k=30)
-        kmeanModel.fit(X)
-        # kmeanModel.show()
-        optimalK = kmeanModel.elbow_value_
-        print(optimalK)
+        mininertia = inertias[0]
+        for i in  range(len(inertias)):
+            if inertias[i] < mininertia:
+                mininertia = inertias[i]
+        for i in range(len(inertias)):  # find the first minimum inertia
+            if inertias[i] == mininertia:
+                optimalK = i + 2
+                break
+
+        # print("inertias")
+        # print(inertias)
+        # print(optimalK)
 
         clusters = KMeans(n_clusters=optimalK).fit(X)
         identified_clusters = clusters.fit_predict(X)
-        print(identified_clusters)
 
-        for i in range(len(population) - 1):
+        for i in range(len(population)):
             population[i].species = identified_clusters[i]
 
         return
@@ -666,7 +670,7 @@ if __name__ == "__main__":
 
     generation_num = 0
 
-    problem.calc_fitness()
+    # problem.calc_fitness()
     # problem.clustering_speciation(population)
 
     for i in range(GA_MAXITER):
