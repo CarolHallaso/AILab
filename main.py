@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from numpy import cumsum, resize
 
-GA_POPSIZE = 2048  # genome population size
+GA_POPSIZE = 100  # genome population size
 GA_MAXITER = 16384  # maximum iterations (generations)
 GA_ELITRATE = 0.1  # elitism rate
 GA_MUTATIONRATE = 0.25  # mutation rate
@@ -590,6 +590,20 @@ class GeneticAlgorithm:
                 num_of_species += 1
                 speciation.append([population[i]])
 
+            threshold = self.control_threshold(num_of_species, threshold)
+
+    def control_threshold(self, num_of_species, threshold):
+        min = GA_POPSIZE * 0.1
+        max = GA_POPSIZE * 0.4
+
+        if num_of_species < min:
+            threshold -= 1
+
+        if num_of_species > max:
+            threshold += 1
+
+        return threshold
+
     def get_random_one_of_best(self, population):
         size = int(GA_POPSIZE * GA_ELITRATE)
         temp = population[:size].copy()
@@ -688,7 +702,7 @@ if __name__ == "__main__":
         # if you choose rws you also need to give the func the probabilities list
         # and the cross over for the two parents ("PMX", "CX", or None)
         # and the mutation type ("inverse_mutation", "scramble_mutation", or None)
-        #problem.threshold(population) #m3 hd bsht3'l bs bser kter btee2!!
+        problem.threshold(population) #m3 hd bsht3'l bs bser kter btee2!!
         buffer = problem.mate(population, buffer, "DOUBLE", "tournament", probabilities)  # mate the population
         population, buffer = problem.swap(population, buffer)
 
@@ -706,12 +720,7 @@ if __name__ == "__main__":
         helper2 = pmax + (pmax * (e ** (r*generation_num)))
         GA_MUTATIONRATE = helper1 / helper2
 
-        problem.random_immigrants(population)
-
-
-
-
-
+        #problem.random_immigrants(population)
 
 
     E_T = time.time() - start_t  # calculate end time

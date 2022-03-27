@@ -185,6 +185,20 @@ class BinPacking:
                 num_of_species += 1
                 speciation.append([population[i]])
 
+        threshold = self.control_threshold(num_of_species, threshold)
+
+    def control_threshold(self, num_of_species, threshold):
+        min = POPSIZE * 0.1
+        max = POPSIZE * 0.4
+
+        if num_of_species < min:
+            threshold -= 1
+
+        if num_of_species > max:
+            threshold += 1
+
+        return threshold
+
     def get_random_one_of_best(self, population):
         size = int(POPSIZE * ELITRATE)
         temp = population[:size].copy()
