@@ -6,10 +6,16 @@ import random
 import statistics
 import time
 import timeit
-
+import numpy as np
+import kmeans1d
 from matplotlib import pyplot as plt
 import numpy as np
 from numpy import cumsum, resize
+from scipy.spatial.distance import cdist
+from sklearn.cluster import KMeans
+from yellowbrick.cluster import KElbowVisualizer
+from yellowbrick.cluster import KElbowVisualizer
+from sklearn.cluster import KMeans
 
 GA_POPSIZE = 2048  # genome population size
 GA_MAXITER = 16384  # maximum iterations (generations)
@@ -143,6 +149,54 @@ class GeneticAlgorithm:
             if found == 0:
                 species.append(population[i].species)
         return len(species)
+
+    def clustering_speciation(self, population):
+        K = range(1, 30)
+        x = []
+        distortions = []
+        inertias = []
+        mapping1 = {}
+        mapping2 = {}
+
+        for i in range(len(population)):
+            x.append(population[i].fitness)
+
+        data = np.array(x)
+        X = data.reshape(-1, 1)
+        for k in K:
+            # Building and fitting the model
+            kmeanModel = KMeans(n_clusters=k).fit(X)
+            kmeanModel.fit(X)
+
+            distortions.append(sum(np.min(cdist(X, kmeanModel.cluster_centers_,
+                                                'euclidean'), axis=1)) / X.shape[0])
+            inertias.append(kmeanModel.inertia_)
+
+            mapping1[k] = sum(np.min(cdist(X, kmeanModel.cluster_centers_,
+                                           'euclidean'), axis=1)) / X.shape[0]
+            mapping2[k] = kmeanModel.inertia_
+        plt.plot(K, inertias, 'bx-')
+        plt.xlabel('Values of K')
+        plt.ylabel('Inertia')
+        plt.title('The Elbow Method using Inertia')
+        plt.show()
+
+        kmeanModel = KElbowVisualizer(KMeans(), k=30)
+        kmeanModel.fit(X)
+        # kmeanModel.show()
+        optimalK = kmeanModel.elbow_value_
+        print(optimalK)
+
+        clusters = KMeans(n_clusters=optimalK).fit(X)
+        identified_clusters = clusters.fit_predict(X)
+        print(identified_clusters)
+
+        for i in range(len(population) - 1):
+            population[i].species = identified_clusters[i]
+
+        return
+
+
 
     def mate(self, population, buffer, cross_over_type, selection_method = None, probabilities = None, replacement=None, mutation_type=None):
 
@@ -612,6 +666,9 @@ if __name__ == "__main__":
 
     generation_num = 0
 
+    problem.calc_fitness()
+    # problem.clustering_speciation(population)
+
     for i in range(GA_MAXITER):
 
         time2 = time.time()  # clock ticks
@@ -670,7 +727,9 @@ if __name__ == "__main__":
         # if you choose rws you also need to give the func the probabilities list
         # and the cross over for the two parents ("PMX", "CX", or None)
         # and the mutation type ("inverse_mutation", "scramble_mutation", or None)
-        #problem.threshold(population) #m3 hd bsht3'l bs bser kter btee2!!
+
+        # problem.threshold(population) #m3 hd bsht3'l bs bser kter btee2!!
+        problem.clustering_speciation(population)
         buffer = problem.mate(population, buffer, "DOUBLE", "tournament", probabilities)  # mate the population
         population, buffer = problem.swap(population, buffer)
 
@@ -687,10 +746,6 @@ if __name__ == "__main__":
         helper1 = 2 * (pmax ** 2) * (e ** (r * generation_num))
         helper2 = pmax + (pmax * (e ** (r*generation_num)))
         GA_MUTATIONRATE = helper1 / helper2
-
-
-
-
 
 
 
