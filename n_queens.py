@@ -359,54 +359,6 @@ class GeneticAlgorithm:
                 num_of_species += 1
                 speciation.append([population[i]])
 
-        threshold = self.control_threshold(num_of_species, threshold)
-
-
-    def control_threshold(self, num_of_species, threshold):
-        min = GA_POPSIZE * 0.1
-        max = GA_POPSIZE * 0.4
-
-        if num_of_species < min:
-            threshold -= 1
-
-        if num_of_species > max:
-            threshold += 1
-
-        return threshold
-
-    def get_random_one_of_best(self, population):
-        size = int(GA_POPSIZE * GA_ELITRATE)
-        temp = population[:size].copy()
-        r = random.randrange(0, len(temp))
-        return temp[r]
-
-
-    def random_immigrants(self, population):
-        esize = int(GA_POPSIZE * GA_ELITRATE)
-        worst_start_index = int((1 - GA_ELITRATE) * len(population))
-
-        while worst_start_index != len(population):
-            good_one = self.get_random_one_of_best(population)
-            self.inverse_mutation(good_one)
-            population[worst_start_index] = good_one
-            worst_start_index += 1
-
-    def inverse_mutation(self, member):
-        # implements the inversion mutation we learned
-        p = member.string
-        index1 = random.randrange(0, len(p))
-        index2 = random.randrange(index1, len(p))
-        r = index2 - index1
-        for i in range(r):
-            tmp = p[index1]
-            p[index1] = p[index2]
-            p[index2] = tmp
-            index1 += 1
-            index2 -= 1
-            i += 1
-
-        member.string = p
-
 
 if __name__ == "__main__":
 
@@ -476,7 +428,7 @@ if __name__ == "__main__":
         if population[0].fitness == 0:
             break
 
-        buffer = problem.mate(population, buffer, "DOUBLE", "tournament")  # mate
+        buffer = problem.mate(population, buffer, "SINGLE", "tournament")  # mate
         population, buffer = buffer, population
 
         for genome in population:
@@ -492,7 +444,6 @@ if __name__ == "__main__":
             helper1 = 2 * (pmax ** 2) * (e ** (r * generation_num))
             helper2 = pmax + (pmax * (e ** (r * generation_num)))
             GA_MUTATIONRATE = helper1 / helper2
-            #problem.random_immigrants(population)
 
         E_T = time.time() - start_t
         clock_ticks = time.time() - time2
