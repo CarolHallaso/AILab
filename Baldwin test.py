@@ -126,16 +126,6 @@ class BaldwinExperiment:
 
         return np.random.choice(population, p=genomes_probabilities)
 
-    def rws(self, population, probabilities):
-        # Roulette wheel selection algorithm
-        # implements the pseudocode we saw in class
-        rndNumber = random.random()
-        offset = 0.0
-        for i in range(len(population)):
-            offset += probabilities[i]
-            if rndNumber < offset:
-                return i
-
     def mate(self, population, buffer: list[GA_struct]):
         size = int(self.P_size * ELITRATE)
         self.elitism(population, buffer, size)
