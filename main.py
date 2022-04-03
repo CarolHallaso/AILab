@@ -15,7 +15,7 @@ from scipy.spatial.distance import cdist
 from yellowbrick.cluster import KElbowVisualizer
 from sklearn.cluster import KMeans
 
-GA_POPSIZE = 2048  # genome population size
+GA_POPSIZE = 100  # genome population size
 GA_MAXITER = 16384  # maximum iterations (generations)
 GA_ELITRATE = 0.1  # elitism rate
 GA_MUTATIONRATE = 0.25  # mutation rate
@@ -148,56 +148,7 @@ class GeneticAlgorithm:
                 species.append(population[i].species)
         return len(species)
 
-    def clustering_speciation(self, population):
-        k = 2
-        diff = 1
-        epsilon = 0.5
-        x = []
-        inertias = []
-
-        for i in range(len(population)):
-            x.append(population[i].fitness)
-
-        data = np.array(x)
-        X = data.reshape(-1, 1)
-
-        while k < len(population) and diff > epsilon:
-            # Building and fitting the model
-            kmeanModel = KMeans(n_clusters=k).fit(X)
-            kmeanModel.predict(X)
-            # kmeanModel.fit(X)
-
-            inertias.append(kmeanModel.inertia_)
-            if k - 2 > 0:  # if not the first iteration we can update diff
-                diff = inertias[k-3] - inertias[k-2]
-            k += 1
-
-        # o = range(2, k)
-        # plt.plot(o, inertias, 'bx-')
-        # plt.xlabel('Values of K')
-        # plt.ylabel('Inertia')
-        # plt.title('The Elbow Method using Inertia')
-        # plt.show()
-
-        mininertia = inertias[0]
-        for i in  range(len(inertias)):
-            if inertias[i] < mininertia:
-                mininertia = inertias[i]
-        for i in range(len(inertias)):  # find the first minimum inertia
-            if inertias[i] == mininertia:
-                optimalK = i + 2
-                break
-
-        clusters = KMeans(n_clusters=optimalK).fit(X)
-        identified_clusters = clusters.fit_predict(X)
-
-        for i in range(len(population)):
-            population[i].species = identified_clusters[i]
-
-        return
-
-    def mate(self, population, buffer, cross_over_type, selection_method = None,
-             probabilities = None, replacement=None, mutation_type=None):
+    def mate(self, population, buffer, cross_over_type, selection_method = None, probabilities = None, replacement=None, mutation_type=None):
 
         esize = int(GA_POPSIZE * GA_ELITRATE)
         tsize = len(GA_TARGET)
@@ -647,6 +598,38 @@ class GeneticAlgorithm:
                 num_of_species += 1
                 speciation.append([population[i]])
 
+            threshold = self.control_threshold(num_of_species, threshold)
+
+    def control_threshold(self, num_of_species, threshold):
+        min = GA_POPSIZE * 0.1
+        max = GA_POPSIZE * 0.4
+
+        if num_of_species < min:
+            threshold -= 1
+
+        if num_of_species > max:
+            threshold += 1
+
+        return threshold
+
+    def get_random_one_of_best(self, population):
+        size = int(GA_POPSIZE * GA_ELITRATE)
+        temp = population[:size].copy()
+        r = random.randrange(0, len(temp))
+        return temp[r]
+
+
+    def random_immigrants(self, population):
+        esize = int(GA_POPSIZE * GA_ELITRATE)
+        worst_start_index = int((1 - GA_ELITRATE) * len(population))
+
+        while worst_start_index != len(population):
+            good_one = self.get_random_one_of_best(population)
+            self.inverse_mutation(good_one)
+            population[worst_start_index] = good_one
+            worst_start_index += 1
+
+
 
 
 
@@ -668,9 +651,6 @@ if __name__ == "__main__":
     probabilities = problem.init_roulette(population)  # initialize the roulette
 
     generation_num = 0
-
-    # problem.calc_fitness()
-    # problem.clustering_speciation(population)
 
     for i in range(GA_MAXITER):
 
@@ -750,6 +730,7 @@ if __name__ == "__main__":
         helper2 = pmax + (pmax * (e ** (r*generation_num)))
         GA_MUTATIONRATE = helper1 / helper2
 
+        #problem.random_immigrants(population)
 
 
     E_T = time.time() - start_t  # calculate end time
