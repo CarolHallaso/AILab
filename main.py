@@ -151,7 +151,7 @@ class GeneticAlgorithm:
     def clustering_speciation(self, population):
         k = 2
         diff = 1
-        epsilon = 0.05
+        epsilon = 0.5
         x = []
         inertias = []
 
@@ -188,10 +188,6 @@ class GeneticAlgorithm:
                 optimalK = i + 2
                 break
 
-        # print("inertias")
-        # print(inertias)
-        # print(optimalK)
-
         clusters = KMeans(n_clusters=optimalK).fit(X)
         identified_clusters = clusters.fit_predict(X)
 
@@ -200,9 +196,8 @@ class GeneticAlgorithm:
 
         return
 
-
-
-    def mate(self, population, buffer, cross_over_type, selection_method = None, probabilities = None, replacement=None, mutation_type=None):
+    def mate(self, population, buffer, cross_over_type, selection_method = None,
+             probabilities = None, replacement=None, mutation_type=None):
 
         esize = int(GA_POPSIZE * GA_ELITRATE)
         tsize = len(GA_TARGET)
@@ -222,11 +217,15 @@ class GeneticAlgorithm:
                 i1 = random.randrange(0, GA_POPSIZE // 2)
                 i2 = random.randrange(0, GA_POPSIZE // 2)
 
-            if selection_method == "threshold":
-                #self.sort_by_species() afkr fsh 7aji
+            if selection_method == "threshold" or selection_method == "clustering":
                 num_of_species = self.get_num_of_species(population)
-                s = random.randrange(0, num_of_species)
-                num = self.get_num_of_genomes_in_species(population, s)
+                okay = False
+                while not okay:
+                    s = random.randrange(0, num_of_species)
+                    num = self.get_num_of_genomes_in_species(population, s)
+                    if num >= 2:
+                        okay = True
+
                 i1, i2 = self.get_two_random_parents_with_same_species(population, s)
 
             if i != (GA_POPSIZE - 1) and selection_method == "sus":
@@ -734,7 +733,7 @@ if __name__ == "__main__":
 
         # problem.threshold(population) #m3 hd bsht3'l bs bser kter btee2!!
         problem.clustering_speciation(population)
-        buffer = problem.mate(population, buffer, "DOUBLE", "tournament", probabilities)  # mate the population
+        buffer = problem.mate(population, buffer, "DOUBLE", "clustering")  # mate the population
         population, buffer = problem.swap(population, buffer)
 
         for genome in population:  # add the age of the genomes in every iteration
