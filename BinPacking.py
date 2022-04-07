@@ -10,6 +10,8 @@ ELITRATE = 0.1  # elitism rate
 MUTATIONRATE = 0.25  # mutation rate
 MUTATION = sys.maxsize * MUTATIONRATE
 e = 2.71828182846
+FREQUENCY = 0.25
+INTENSITY = 30
 
 class GA_struct:
 
@@ -18,6 +20,7 @@ class GA_struct:
         self.permutation = permutation
         self.fitness = fitness
         self.species = -1
+        self.learning_fit = 0
 
 class BinPacking:
 
@@ -290,6 +293,151 @@ class BinPacking:
         return len(set(population[0].permutation))
 
 
+    def getvalue(self, p, population: list):
+        capacity = self.Bsize
+        n = self.NumOfObjects
+        k = 2
+
+        num_of_bins = len(set(p))
+        bins = [0] * n
+        sum = 0
+
+        for j in range(n):
+            sum += self.objects[j]
+            helper = p
+            bins[helper[j]] = sum
+
+        fitness = 0
+        for j in range(n):
+            if bins[j] != 0:
+                fitness += pow(abs(capacity - bins[j]), k)
+
+        fitness /= num_of_bins
+        return fitness
+
+    def getneighbors(self, point, population):
+        r = 10
+        neighbors = [None] * r
+        for i in range(r):
+            neighbors[i] = population[i].permutation
+
+        return neighbors
+
+    def hill_climbing(self, p, population):
+        final = p
+        final_value = self.getvalue(final, population)
+        neighbors = self.getneighbors(final, population)
+
+        iterations = INTENSITY
+        for i in range(iterations):
+
+            for j in range(len(neighbors)):
+                new_value = self.getvalue(neighbors[j], population)
+                if final_value > new_value:
+                    final = neighbors[j]
+                    final_value = new_value
+                    neighbors = self.getneighbors(final, population)
+                    break
+
+        return final
+
+    def steepest_ascent(self, population, p):
+
+        final = p
+        final_value = self.getvalue(final, population)
+        neighbors = self.getneighbors(final, population)
+
+        iterations = INTENSITY
+        for i in range(iterations):
+            best_n = neighbors[1]
+            best_n_value = self.getvalue(best_n, population)
+
+            for j in range(len(neighbors)):
+                new_value = self.getvalue(neighbors[j], population)
+                if new_value > best_n_value:
+                    best_n = neighbors[j]
+                    best_n_value = new_value
+
+            if best_n_value > final_value:
+                final_value = best_n_value
+                final = best_n
+                neighbors = self.getneighbors(final, population)
+
+        return final
+
+    def random_walk(self, population, p):
+
+        final = p
+        final_value = self.getvalue(final, population)
+        neighbors = self.getneighbors(final, population)
+
+        r = random.randrange(0, len(neighbors))
+
+        final = neighbors[r]
+
+        return final
+
+    def k_gene_exchange(self, population):
+        k = self.NumOfObjects
+        to_exchange = []
+        newp = [0]
+        for i in range(k):
+            r = random.randrange(0, int(len(population)/2))
+            to_exchange[i] = population[r]
+        for i in range(k):
+            newp[i] = to_exchange[i].string[i]
+        return newp
+
+
+    def memetic_algorithm(self):
+        print("memetic algorithm -")
+        random.seed()
+        pop1 = [None] * POPSIZE
+        pop2 = [None] * POPSIZE
+        self.init_population(pop1)
+        population = pop1
+        buffer = pop2
+
+        for i in range(MAXITER):
+
+            self.calc_fitness(population)
+            self.sort_by_fitness(population)
+
+            self.print_best(population)
+
+
+            tmp = []
+
+            for j in range(POPSIZE):
+
+                r = random.randrange(0, 100)
+                if r < FREQUENCY:
+                    tmp.append((population[i], i))
+
+            for k in range(len(tmp)-1):
+                curr_fit = self.getvalue(tmp[i][0].permutation, population)
+                best = self.hill_climbing(tmp[i][0].permutation, population)
+                B_fit = self.getvalue(best, population)
+                if B_fit == 0:
+                    break
+
+                if B_fit > curr_fit:
+                    population[tmp[i][1]].permutation = best
+
+            #self.print_best(population)
+
+
+
+            if population[0].fitness == 0:
+                break
+
+            buffer = self.mate(population, buffer, "SINGLE")
+            population, buffer = buffer, population
+            #print(population[0].permutation)
+
+
+
+
 # Returns number of bins required using first fit algorithm
 def firstFit(objects, capacity):
         time0 = time.time()  # Create an array to store remaining space in bins
@@ -337,15 +485,8 @@ if __name__ == "__main__":
         print(result1)
 
         problem = BinPacking(objects, capacity)
+        #problem.memetic_algorithm()
+
         result2 = problem.genetic(objects, capacity)
         print("Number of bins required in - Genetic Algorithm:")
         print(result2)
-
-
-
-
-
-
-
-
-

@@ -19,6 +19,8 @@ GA_MUTATIONRATE = 0.25  # mutation rate
 GA_MUTATION = sys.maxsize * GA_MUTATIONRATE
 QUEENS = 8
 e = 2.71828182846
+FREQUENCY = 0.25
+INTENSITY = 30
 
 class GA_struct:
 
@@ -28,6 +30,7 @@ class GA_struct:
         self.fitness = fitness
         self.age = 0
         self.species = -1
+        self.learning_fit = 0
 
 
 class GeneticAlgorithm:
@@ -407,8 +410,145 @@ class GeneticAlgorithm:
 
         member.string = p
 
+    def getneighbors(self, point, population):
+        r = 10
+        neighbors = [None] * r
+        for i in range(r):
+            neighbors[i] = population[i].string
+
+        return neighbors
+
+    def getvalue(self, permutation):
+        count = [0] * QUEENS
+        bad_count = 0
+        len1 = len(permutation)
+        for i in range(len1):
+            count[permutation[i]] += 1
+        for x in count:
+            if x != 1:
+                bad_count += 1
+        for i in range(QUEENS):
+            for j in range(QUEENS):
+                if i == j:
+                    continue
+                if abs(i - j) == abs(int(permutation[i]) - int(permutation[j])):
+                    bad_count += 1
+
+        return bad_count
+
+    def hill_climbing(self, population, p):
+        final = p
+        final_value = self.getvalue(final)
+        #final_value = self.getvalue(final)
+        neighbors = self.getneighbors(final, population)
+
+        iterations = INTENSITY
+        for i in range(iterations):
+
+            for j in range(len(neighbors)):
+                new_value = self.getvalue(neighbors[j])
+                if final_value > new_value:
+                    final = neighbors[j]
+                    final_value = new_value
+                    neighbors = self.getneighbors(final, population)
+                    break
+
+        return final
+
+    def steepest_ascent(self, population, p):
+
+        final = p
+        final_value = self.getvalue(final)
+        neighbors = self.getneighbors(final, population)
+
+        iterations = INTENSITY
+        for i in range(iterations):
+            best_n = neighbors[1]
+            best_n_value = self.getvalue(best_n)
+
+            for j in range(len(neighbors)):
+                new_value = self.getvalue(neighbors[j])
+                if new_value > best_n_value:
+                    best_n = neighbors[j]
+                    best_n_value = new_value
+
+            if best_n_value > final_value:
+                final_value = best_n_value
+                final = best_n
+                neighbors = self.getneighbors(final, population)
+
+        return final
+
+    def random_walk(self, population, p):
+
+        final = p
+        final_value = self.getvalue(final)
+        neighbors = self.getneighbors(final, population)
+
+        r = random.randrange(0, len(neighbors))
+
+        final = neighbors[r]
+
+        return final
+
+    def k_gene_exchange(self, population):
+        k = QUEENS
+        to_exchange = []
+        newp = [0]
+        for i in range(k):
+            r = random.randrange(0, int(len(population)/2))
+            to_exchange[i] = population[r]
+        for i in range(k):
+            newp[i] = to_exchange[i].string[i]
+        return newp
+
+
+    def memetic_algorithm(self):
+        random.seed()
+        pop_alpha = [None] * GA_POPSIZE
+        pop_beta = [None] * GA_POPSIZE
+        buffer = pop_beta
+        population = self.initPop(pop_alpha, pop_beta)
+
+        for i in range(GA_MAXITER):
+            memetic_start_t = time.time()
+
+            self.calc_fitness_queens(population)
+            population.sort(key=lambda x: x.fitness)  # sort population array by fitness
+
+            tmp = []
+
+            for j in range(GA_POPSIZE):
+
+                r = random.randrange(0, 100)
+                if r < FREQUENCY:
+                    tmp.append((population[i], i))
+
+            for k in range(len(tmp)):
+                curr_fit = self.getvalue(tmp[i][0].string)
+                best = self.hill_climbing(population, tmp[i][0].string)
+                B_fit = self.getvalue(best)
+                if B_fit == 0:
+                    break
+
+                if B_fit > curr_fit:
+                    population[tmp[i][1]].string = best
+
+
+
+            if population[0].fitness == 0:
+                break
+
+            buffer = self.mate(population, buffer, "SINGLE")
+            population, buffer = buffer, population
+            print(population[0].string)
+
+
+
 
 if __name__ == "__main__":
+
+    #GeneticAlgorithm().memetic_algorithm()
 
     problem = GeneticAlgorithm()
     random.seed()

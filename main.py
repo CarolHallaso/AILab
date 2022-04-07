@@ -11,14 +11,15 @@ from matplotlib import pyplot as plt
 import numpy as np
 from numpy import cumsum, resize
 
-GA_POPSIZE = 100  # genome population size
+GA_POPSIZE = 2048  # genome population size
 GA_MAXITER = 16384  # maximum iterations (generations)
 GA_ELITRATE = 0.1  # elitism rate
 GA_MUTATIONRATE = 0.25  # mutation rate
 GA_MUTATION = sys.maxsize * GA_MUTATIONRATE
 GA_TARGET = "Hello world!"
 e = 2.71828182846
-
+FREQUENCY = 0.25
+INTENSITY = 30
 
 
 class GA_struct:
@@ -29,6 +30,7 @@ class GA_struct:
         self.fitness = fitness
         self.age = 0
         self.species = -1
+        self.learning_fit = 0
 
 
 class Particle:
@@ -556,7 +558,7 @@ class GeneticAlgorithm:
 
     def calculate_distance(self, first, second):
 
-        diff = problem.editDistDP(first.string, second.string, len(first.string), len(second.string))
+        diff = self.editDistDP(first.string, second.string, len(first.string), len(second.string))
 
         return diff
 
@@ -565,7 +567,7 @@ class GeneticAlgorithm:
         for i in range(len(population)):
 
             for j in range(len(population)):
-                ans += problem.calculate_distance(population[i], population[j])
+                ans += self.calculate_distance(population[i], population[j])
         return ans / len(population)
 
     def threshold(self, population):
@@ -622,12 +624,145 @@ class GeneticAlgorithm:
             worst_start_index += 1
 
 
+    def getneighbors(self, point):
+        r = 10
+        neighbors = [""] * r
+        for i in range(r-1):
+            ipos = random.randrange(0, len(GA_TARGET) - 1)
+            delta = random.randrange(0, 90) + 32
+            string = point[: ipos] + chr((ord(point[ipos]) + delta) % 122) + point[ipos + 1:]
+            neighbors[i] = string
+
+        return neighbors
+
+    def getvalue(self, permutation, target):
+        value = self.editDistDP(permutation, target, len(permutation), len(target))
+        return value
+
+    def k_gene_exchange(self, population):
+        k = len(GA_TARGET)
+        to_exchange = []
+        newp = [0]
+        for i in range(k):
+            r = random.randrange(0, int(len(population)/2))
+            to_exchange[i] = population[r]
+        for i in range(k):
+            newp[i] = to_exchange[i].string[i]
+        return newp
+
+    def hill_climbing(self, p):
+        final = p
+        final_value = self.editDistDP(final, GA_TARGET, len(final), len(GA_TARGET))
+        #final_value = self.getvalue(final)
+        neighbors = self.getneighbors(final)
+
+        iterations = INTENSITY
+        for i in range(iterations):
+
+            for j in range(len(neighbors)):
+                new_value = self.getvalue(neighbors[j], GA_TARGET)
+                if final_value > new_value:
+                    final = neighbors[j]
+                    final_value = new_value
+                    neighbors = self.getneighbors(final)
+                    break
+
+        return final
+
+    def steepest_ascent(self, p):
+
+        final = p
+        final_value = self.getvalue(final, GA_TARGET)
+        neighbors = self.getneighbors(final)
+
+        iterations = INTENSITY
+        for i in range(iterations):
+            best_n = neighbors[1]
+            best_n_value = self.getvalue(best_n, GA_TARGET)
+
+            for j in range(len(neighbors)):
+                new_value = self.getvalue(neighbors[j], GA_TARGET)
+                if new_value > best_n_value:
+                    best_n = neighbors[j]
+                    best_n_value = new_value
+
+            if best_n_value > final_value:
+                final_value = best_n_value
+                final = best_n
+                neighbors = self.getneighbors(final)
+
+        return final
+
+    def random_walk(self, p):
+
+        final = p
+        final_value = self.getvalue(final, GA_TARGET)
+        neighbors = self.getneighbors(final)
+
+        r = random.randrange(0, len(neighbors))
+
+        final = neighbors[r]
+
+        return final
+
+
+    def memetic_algorithm(self):
+        random.seed()
+        pop_alpha = [None] * GA_POPSIZE
+        pop_beta = [None] * GA_POPSIZE
+
+        self.init_population(pop_alpha, pop_beta)  #initialize the population
+
+        population = pop_alpha
+        buffer = pop_beta
+        start_t = time.time()  # starting time
+
+        for i in range(GA_MAXITER):
+
+            time2 = time.time()  # clock ticks
+
+            self.calc_fitness()
+            self.sort_by_fitness()
+            self.print_best()
+
+            tmp = []
+
+            for j in range(GA_POPSIZE):
+
+                r = random.randrange(0, 100)
+                if r < FREQUENCY:
+                    tmp.append((population[i], i))
+
+            for k in range(len(tmp)-1):
+                curr_fit = self.editDistDP(tmp[i][0].string, GA_TARGET, len(tmp[i][0].string), len(GA_TARGET))
+                best = self.hill_climbing(tmp[i][0].string)
+                B_fit = self.editDistDP(best, GA_TARGET, len(best), len(GA_TARGET))
+                if B_fit == 0:
+                    break
+
+                if B_fit > curr_fit:
+                    population[tmp[i][1]].string = best
+
+            self.print_best()
+
+
+
+            if population[0].fitness == 0:
+                break
+
+            buffer = self.mate(population, buffer, "SINGLE")
+            population, buffer = buffer, population
+            print(population[0].string)
 
 
 
 if __name__ == "__main__":
-
     problem = GeneticAlgorithm()
+
+    #GeneticAlgorithm().memetic_algorithm()
+
+
+
     random.seed()
     pop_alpha = [None] * GA_POPSIZE
     pop_beta = [None] * GA_POPSIZE
@@ -638,7 +773,7 @@ if __name__ == "__main__":
     buffer = pop_beta
     start_t = time.time()  # starting time
 
-    pso = problem.pso()
+    #pso = problem.pso()
 
     probabilities = problem.init_roulette(population)  # initialize the roulette
 
@@ -702,8 +837,8 @@ if __name__ == "__main__":
         # if you choose rws you also need to give the func the probabilities list
         # and the cross over for the two parents ("PMX", "CX", or None)
         # and the mutation type ("inverse_mutation", "scramble_mutation", or None)
-        problem.threshold(population) #m3 hd bsht3'l bs bser kter btee2!!
-        buffer = problem.mate(population, buffer, "DOUBLE", "tournament", probabilities)  # mate the population
+        #problem.threshold(population) #m3 hd bsht3'l bs bser kter btee2!!
+        buffer = problem.mate(population, buffer, "SINGLE", "tournament", probabilities)  # mate the population
         population, buffer = problem.swap(population, buffer)
 
         for genome in population:  # add the age of the genomes in every iteration
