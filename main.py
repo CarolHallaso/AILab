@@ -10,6 +10,10 @@ import timeit
 from matplotlib import pyplot as plt
 import numpy as np
 from numpy import cumsum, resize
+from scipy.spatial.distance import cdist
+from yellowbrick.cluster import KElbowVisualizer
+from sklearn.cluster import KMeans
+
 
 GA_POPSIZE = 2048  # genome population size
 GA_MAXITER = 16384  # maximum iterations (generations)
@@ -145,6 +149,54 @@ class GeneticAlgorithm:
             if found == 0:
                 species.append(population[i].species)
         return len(species)
+
+    def clustering_speciation(self, population):
+        k = 2
+        diff = 1
+        epsilon = 0.5
+        x = []
+        inertias = []
+
+        for i in range(len(population)):
+            x.append(population[i].fitness)
+
+        data = np.array(x)
+        X = data.reshape(-1, 1)
+
+        while k < len(population) and diff > epsilon:
+            # Building and fitting the model
+            kmeanModel = KMeans(n_clusters=k).fit(X)
+            kmeanModel.predict(X)
+            # kmeanModel.fit(X)
+
+            inertias.append(kmeanModel.inertia_)
+            if k - 2 > 0:  # if not the first iteration we can update diff
+                diff = inertias[k - 3] - inertias[k - 2]
+            k += 1
+
+        # o = range(2, k)
+        # plt.plot(o, inertias, 'bx-')
+        # plt.xlabel('Values of K')
+        # plt.ylabel('Inertia')
+        # plt.title('The Elbow Method using Inertia')
+        # plt.show()
+
+        mininertia = inertias[0]
+        for i in range(len(inertias)):
+            if inertias[i] < mininertia:
+                mininertia = inertias[i]
+        for i in range(len(inertias)):  # find the first minimum inertia
+            if inertias[i] == mininertia:
+                optimalK = i + 2
+                break
+
+        clusters = KMeans(n_clusters=optimalK).fit(X)
+        identified_clusters = clusters.fit_predict(X)
+
+        for i in range(len(population)):
+            population[i].species = identified_clusters[i]
+
+        return
 
     def mate(self, population, buffer, cross_over_type, selection_method = None, probabilities = None, replacement=None, mutation_type=None):
 
@@ -779,6 +831,8 @@ if __name__ == "__main__":
 
     generation_num = 0
 
+    # problem.clustering_speciation(population)
+
     for i in range(GA_MAXITER):
 
         time2 = time.time()  # clock ticks
@@ -837,7 +891,8 @@ if __name__ == "__main__":
         # if you choose rws you also need to give the func the probabilities list
         # and the cross over for the two parents ("PMX", "CX", or None)
         # and the mutation type ("inverse_mutation", "scramble_mutation", or None)
-        #problem.threshold(population) #m3 hd bsht3'l bs bser kter btee2!!
+        #problem.threshold(population)
+        #problem.clustering_speciation(population)
         buffer = problem.mate(population, buffer, "SINGLE", "tournament", probabilities)  # mate the population
         population, buffer = problem.swap(population, buffer)
 
