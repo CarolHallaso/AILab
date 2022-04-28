@@ -6,7 +6,7 @@ from numpy.random import randint
 import sys
 
 Iterations = 1000
-GA_POPSIZE = 2048
+GA_POPSIZE = 1000
 GA_ELITRATE = 0.1
 GA_MUTATIONRATE = 0.25
 
@@ -82,10 +82,12 @@ class CVRP:
         i = 0
         while i < (len(permutation)):
             num = cars[j]
+            print(0, end=' ')
             for k in range(num):
-                print(permutation[i], end=' ')
+                print(permutation[i] + 1, end=' ')
                 i = i + 1
             j = j + 1
+            print(0, end=' ')
             print()
 
 
@@ -96,6 +98,7 @@ class CVRP:
         cars = [0] * dimension
         current_car = 0
         current_car_capacity = capacity
+        temperature = 5000
 
         for i in range(Iterations):
             permutation = self.generate_per(dimension)
@@ -132,6 +135,13 @@ class CVRP:
                 best_cost = overall_distance
                 best_sol = permutation
                 cars_best_sol = cars
+
+            elif math.exp((best_cost - overall_distance) / temperature) > random.random():
+                best_cost = overall_distance
+                best_sol = permutation
+                cars_best_sol = cars
+
+            temperature = temperature - 5
 
         print(best_sol)
         print(cars_best_sol)
@@ -194,7 +204,7 @@ class CVRP:
     def sort_by_fitness(self, population):
         # sort the population according to the fitness in ascending order
         population.sort(key=lambda x: x.fitness)
-        # self.population.sort(key=lambda x: x.fitness-x.age)
+
         return population
 
     def elitism(self, population: list[GA_struct], buffer: list[GA_struct], esize):
@@ -278,10 +288,11 @@ class CVRP:
 
         # mate the rest
         for i in range(esize, GA_POPSIZE):
+
             i1 = random.randrange(0, GA_POPSIZE // 2)
             i2 = random.randrange(0, GA_POPSIZE // 2)
 
-            #buffer[i].permutation = population[i1].permutation
+
             new_per = self.GAcrossover(population[i1].permutation, population[i2].permutation)
             buffer[i].permutation = new_per
 
@@ -301,7 +312,7 @@ class CVRP:
 
         population = pop_alpha
 
-        for i in range(30):
+        for i in range(100):
             population = self.calc_fitness(population, dimension, capacity, coordsection, demand, depot)
             population = self.sort_by_fitness(population)
 
@@ -312,20 +323,169 @@ class CVRP:
         return population[0].permutation, population[0].fitness
 
 
+    def calc_cost(self, permutation, dimension, capacity, nodes, demand, depot):
+        overall_distance = 0
+        current_car = 0
+        current_car_capacity = capacity
+        cars = [0] * dimension
+        wayback_dist = 0
+
+        for j in range(len(permutation)):
+            distance = 0
+            wayback_dist = 0
+            if current_car_capacity > demand[permutation[j]]:
+                current_car_capacity = current_car_capacity - demand[permutation[j]]
+                cars[current_car] = cars[current_car] + 1
+                if j > 0:
+                    # not the first node so we calculate the distance between the previous node and the current one
+                    distance = self.calculate_distance(nodes[permutation[j - 1]],
+                                                       nodes[permutation[j]])
+                elif j == 0:
+                    # the first node so we calculate the distance between the start point and the current node
+                    distance = self.calculate_distance(depot, nodes[permutation[j]])
+            else:  # we need a new car
+                wayback_dist = self.calculate_distance(nodes[permutation[j - 1]], depot)
+                current_car = current_car + 1
+                current_car_capacity = capacity
+                cars[current_car] = cars[current_car] + 1
+                distance = self.calculate_distance(depot, nodes[permutation[j]])
+
+            overall_distance = overall_distance + distance + wayback_dist
+
+        if wayback_dist == 0:
+            wayback_dist = self.calculate_distance(nodes[permutation[j - 1]], depot)
+            overall_distance = overall_distance + wayback_dist
+
+        return overall_distance, cars
+
+    def get_neighbors(self, permutation, n):
+        neighbors = [0] * int(n)
+        for i in range(int(n)):
+            neighbors[i] = np.random.permutation(permutation)
+        return neighbors
+
+    def existintabu(self, tabu, per):
+        tabu = np.array(tabu)
+        if per in tabu:
+            return 1
+        return 0
+
+    def Tabu_Search(self, dimension, capacity, coordesction, demand, depot):
+
+        curr_per = self.generate_per(dimension)
+        curr_cost, curr_cars = self.calc_cost(curr_per, dimension, capacity, coordesction, demand, depot)
+
+        n = dimension / 2
+        tabulist = [[0]]
+        tabucosts = [0]
+        tabucars = [[0]]
+        tabulist[0] = curr_per
+        tabucosts[0] = curr_cost
+        tabucars[0] = curr_cars
+
+        for i in range(3):
+
+            neighbors = self.get_neighbors(curr_per, n)
+            print(neighbors[0])
+            print(i)
+            best_cost = sys.maxsize
+            best_cars = []
+            best_per = []
+            for j in range(len(neighbors)):
+                new_cost, new_cars = self.calc_cost(neighbors[j], dimension, capacity, coordesction, demand, depot)
+                if new_cost < best_cost and self.existintabu(tabulist, neighbors[j]) == 0:
+                    best_cost = new_cost
+                    best_cars = new_cars
+                    best_per = neighbors[j]
+            tabulist.append(best_per)
+            tabucosts.append(best_cost)
+            tabucars.append(best_cars)
+            curr_per = best_per
+
+        for i in range(len(tabucosts)):
+            if tabucosts[i] < best_cost:
+                best_per = tabulist[i]
+                best_cost = tabucosts[i]
+                best_cars = tabucars[i]
+
+        self.print_best_sol(best_per, best_cars)
+        return best_per, best_cost
+
+
+    def choose_next_state_probabilistically(self, dimension, visited):
+        #TBD!!
+        x = 0
+        r = -1
+        while x == 0:
+            x = 1
+            r = random.randrange(0, dimension)
+            for i in range(len(visited)):
+                if visited[i] == r:
+                    x = 0
+        return r
+
+
+
+    def ACO(self, dimension, capacity, coordsection, demand, depot):
+
+        best_cost = sys.maxsize
+        best_cars = []
+
+        for i in range(Iterations):
+            visited = []
+            start = random.randrange(0, dimension)
+            visited.append(start)
+            per = [start]
+
+            while len(visited) < dimension:
+                next_node = self.choose_next_state_probabilistically(dimension, visited)
+                per.append(next_node)
+                visited.append(next_node)
+
+            cost, cars = self.calc_cost(per, dimension, capacity, coordsection, demand, depot)
+
+        if cost < best_cost:
+            best_per = per
+            best_cost = cost
+            best_cars = cars
+
+        self.print_best_sol(best_per, best_cars)
+
+        return best_cost
+
+
+
+
 
 if __name__ == "__main__":
     file = 'E-n22-k4.txt'
     C = ReadData()
-    d, c, n, demand, depot = C.read_data(file)
-    print(d)
-    print(c)
-    print(n)
+    dimension, capacity, nodes, demand, depot = C.read_data(file)
+    print(dimension)
+    print(capacity)
+    print(nodes)
     print(demand)
     problem = CVRP()
 
-    cost = problem.Simulated_Annealing(d, c, n, demand, depot)
+    print("Simulated Annealing:")
+
+    cost = problem.Simulated_Annealing(dimension, capacity, nodes, demand, depot)
     print(cost)
 
-    p, cd = problem.Genetic_Algorithm(d, c, n, demand, depot)
+    print("Genetic Algorithm:")
+
+    p, cd = problem.Genetic_Algorithm(dimension, capacity, nodes, demand, depot)
     print(p)
     print(cd)
+
+    print("Tabu Search:")
+
+    p3, c3 = problem.Tabu_Search(dimension, capacity, nodes, demand, depot)
+    print(p3)
+    print(c3)
+
+    print("ACO:")
+
+    p4 = problem.ACO(dimension, capacity, nodes, demand, depot)
+    print(p4)
+
