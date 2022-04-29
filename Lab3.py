@@ -535,7 +535,7 @@ class CVRP:
         return best_cost
 
 
-    def PSO(self, dimension, capacity, coordsection, demand, depot):
+    def CPSO(self, dimension, capacity, coordsection, demand, depot):
 
         startt = time.time()
 
@@ -543,11 +543,13 @@ class CVRP:
         BEST = 0
         found = False
 
+        iter = 100
+
         x = [0] * 100
         fit = [0] * 100
 
 
-        for i in range(100):
+        for i in range(iter):
 
             per = self.generate_per(dimension)
             velocity = list(np.random.uniform(size=len(per)))
@@ -595,7 +597,7 @@ class CVRP:
         global_cost, cars = self.calc_cost(global_best, dimension, capacity, coordsection, demand, depot)
 
         elapsed = time.time() - startt
-        print("Overall PSO runtime: " + str(elapsed))
+        print("Overall CPSO runtime: " + str(elapsed))
 
         #plt.title('PSO:')
         #plt.plot(x, fit, label="fitness")
@@ -643,9 +645,9 @@ if __name__ == "__main__":
     p4 = problem.ACO(dimension, capacity, nodes, demand, depot)
     print(p4)
 
-    print("PSO:")
+    print("CPSO:")
 
-    p5, c5 = problem.PSO(dimension, capacity, nodes, demand, depot)
+    p5, c5 = problem.CPSO(dimension, capacity, nodes, demand, depot)
     print(p5)
     print(c5)
 
