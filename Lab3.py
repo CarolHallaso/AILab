@@ -182,11 +182,11 @@ class CVRP:
         elapsed = time.time() - startt
         print("Overall SA runtime: " + str(elapsed))
 
-        plt.title('SA:')
 
-        plt.plot(x, fit, label="fitness")
-        plt.legend()
-        plt.show()
+
+        #plt.plot(x, fit, label="fitness")
+        #plt.legend()
+        #plt.show()
 
         return best_cost
 
@@ -354,10 +354,10 @@ class CVRP:
 
         population = pop_alpha
 
-        x = [0] * 1000
-        fit = [0] * 1000
+        x = [0] * 100
+        fit = [0] * 100
 
-        for i in range(1000):
+        for i in range(100):
             x[i] = i
             population = self.calc_fitness(population, dimension, capacity, coordsection, demand, depot)
             population = self.sort_by_fitness(population)
@@ -372,10 +372,10 @@ class CVRP:
         elapsed = time.time() - startt
         print("Overall GA runtime: " + str(elapsed))
 
-        plt.title('GA:')
-        plt.plot(x, fit, label="fitness")
-        plt.legend()
-        plt.show()
+        #plt.title('GA:')
+        #plt.plot(x, fit, label="fitness")
+        #plt.legend()
+        #plt.show()
 
         return population[0].permutation, population[0].fitness
 
@@ -442,7 +442,9 @@ class CVRP:
         tabucosts[0] = curr_cost
         tabucars[0] = curr_cars
 
-        for i in range(2):
+        iter = 2
+
+        for i in range(iter):
 
             neighbors = self.get_neighbors(curr_per, n)
             print(neighbors[0])
@@ -525,10 +527,10 @@ class CVRP:
         elapsed = time.time() - startt
         print("Overall ACO runtime: " + str(elapsed))
 
-        plt.title('ACO:')
-        plt.plot(x, fit, label="fitness")
-        plt.legend()
-        plt.show()
+        #plt.title('ACO:')
+        #plt.plot(x, fit, label="fitness")
+        #plt.legend()
+        #plt.show()
 
         return best_cost
 
@@ -595,10 +597,10 @@ class CVRP:
         elapsed = time.time() - startt
         print("Overall PSO runtime: " + str(elapsed))
 
-        plt.title('PSO:')
-        plt.plot(x, fit, label="fitness")
-        plt.legend()
-        plt.show()
+        #plt.title('PSO:')
+        #plt.plot(x, fit, label="fitness")
+        #plt.legend()
+        #plt.show()
 
         return global_best , global_cost
 
