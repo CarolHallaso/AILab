@@ -1,9 +1,13 @@
 import math
 import random
+import time
+
 
 import numpy as np
 from numpy.random import randint
 import sys
+
+from matplotlib import pyplot as plt
 
 Iterations = 1000
 GA_POPSIZE = 1000
@@ -60,6 +64,27 @@ class GA_struct:
         self.fitness = fitness
         self.cars = cars
 
+
+class Particle:
+    def __init__(self, position, velocity):
+        self.position = position
+        self.personal_best = position
+        self.velocity = velocity
+    # func that updates the particle's velocity using the inertia weights like we learned in class
+    def velocity_update(self, w, c1, c2, global_best):
+        for i in range(len(self.velocity)):
+            cognitive = self.personal_best[i] - self.position[i]
+            social = global_best[i] - self.position[i]
+            self.velocity[i] = w * self.velocity[i] + c1 * random.random() * cognitive + c2 * random.random() * social
+
+    # func that updates the particle's position like we learned in class
+    def position_update(self):
+        len = 22
+        cvrp = CVRP()
+        updated_position = CVRP.generate_per(cvrp, len)
+
+        self.position = updated_position
+
 class CVRP:
 
     def generate_per(self, length):
@@ -92,6 +117,8 @@ class CVRP:
 
 
     def Simulated_Annealing(self, dimension, capacity, coordsection, demand, depot):
+        startt = time.time()
+
         best_sol = [0]
         best_cost = sys.maxsize
         cars_best_sol = []
@@ -100,7 +127,11 @@ class CVRP:
         current_car_capacity = capacity
         temperature = 5000
 
+        x = [0] * Iterations
+        fit = [0] * Iterations
+
         for i in range(Iterations):
+            x[i] = i
             permutation = self.generate_per(dimension)
             overall_distance = 0
             current_car = 0
@@ -143,9 +174,19 @@ class CVRP:
 
             temperature = temperature - 5
 
+            fit[i] = best_cost
+
         print(best_sol)
         print(cars_best_sol)
         self.print_best_sol(best_sol, cars_best_sol)
+        elapsed = time.time() - startt
+        print("Overall SA runtime: " + str(elapsed))
+
+        plt.title('SA:')
+
+        plt.plot(x, fit, label="fitness")
+        plt.legend()
+        plt.show()
 
         return best_cost
 
@@ -303,6 +344,7 @@ class CVRP:
         return buffer, population
 
     def Genetic_Algorithm(self, dimension, capacity, coordsection, demand, depot):
+        startt = time.time()
 
         pop_alpha = [None] * GA_POPSIZE
         pop_beta = [None] * GA_POPSIZE
@@ -312,14 +354,29 @@ class CVRP:
 
         population = pop_alpha
 
-        for i in range(100):
+        x = [0] * 1000
+        fit = [0] * 1000
+
+        for i in range(1000):
+            x[i] = i
             population = self.calc_fitness(population, dimension, capacity, coordsection, demand, depot)
             population = self.sort_by_fitness(population)
 
             buffer = self.mate(population, buffer)  # mate the population
             population, buffer = problem.swap(population, buffer)
 
+            fit[i] = population[0].fitness
+
         self.print_best_sol(population[0].permutation, population[0].cars)
+
+        elapsed = time.time() - startt
+        print("Overall GA runtime: " + str(elapsed))
+
+        plt.title('GA:')
+        plt.plot(x, fit, label="fitness")
+        plt.legend()
+        plt.show()
+
         return population[0].permutation, population[0].fitness
 
 
@@ -372,6 +429,8 @@ class CVRP:
 
     def Tabu_Search(self, dimension, capacity, coordesction, demand, depot):
 
+        startt = time.time()
+
         curr_per = self.generate_per(dimension)
         curr_cost, curr_cars = self.calc_cost(curr_per, dimension, capacity, coordesction, demand, depot)
 
@@ -383,7 +442,7 @@ class CVRP:
         tabucosts[0] = curr_cost
         tabucars[0] = curr_cars
 
-        for i in range(3):
+        for i in range(2):
 
             neighbors = self.get_neighbors(curr_per, n)
             print(neighbors[0])
@@ -409,6 +468,10 @@ class CVRP:
                 best_cars = tabucars[i]
 
         self.print_best_sol(best_per, best_cars)
+
+        elapsed = time.time() - startt
+        print("Overall TS runtime: " + str(elapsed))
+
         return best_per, best_cost
 
 
@@ -428,10 +491,16 @@ class CVRP:
 
     def ACO(self, dimension, capacity, coordsection, demand, depot):
 
+        startt = time.time()
+
         best_cost = sys.maxsize
         best_cars = []
 
+        x = [0] * Iterations
+        fit = [0] * Iterations
+
         for i in range(Iterations):
+            x[i] = i
             visited = []
             start = random.randrange(0, dimension)
             visited.append(start)
@@ -444,14 +513,97 @@ class CVRP:
 
             cost, cars = self.calc_cost(per, dimension, capacity, coordsection, demand, depot)
 
-        if cost < best_cost:
-            best_per = per
-            best_cost = cost
-            best_cars = cars
+            if cost < best_cost:
+                best_per = per
+                best_cost = cost
+                best_cars = cars
+
+            fit[i] = best_cost
 
         self.print_best_sol(best_per, best_cars)
 
+        elapsed = time.time() - startt
+        print("Overall ACO runtime: " + str(elapsed))
+
+        plt.title('ACO:')
+        plt.plot(x, fit, label="fitness")
+        plt.legend()
+        plt.show()
+
         return best_cost
+
+
+    def PSO(self, dimension, capacity, coordsection, demand, depot):
+
+        startt = time.time()
+
+        particles = [] * GA_POPSIZE
+        BEST = 0
+        found = False
+
+        x = [0] * 100
+        fit = [0] * 100
+
+
+        for i in range(100):
+
+            per = self.generate_per(dimension)
+            velocity = list(np.random.uniform(size=len(per)))
+            particles.append(Particle(per, velocity))
+
+        global_best = self.generate_per(dimension)
+
+        for i in range(100):
+
+            x[i] = i
+            c, cars = self.calc_cost(global_best, dimension, capacity, coordsection, demand, depot)
+            fit[i] = c
+
+            for particle in particles:
+
+                objective = self.calc_cost(particle.position, dimension, capacity, coordsection, demand, depot)
+                if objective == BEST:
+                    global_best = particle.position
+                    found = True
+                    break
+
+                else:
+                    curr_fit = self.calc_cost(global_best, dimension, capacity, coordsection, demand, depot)
+                    if objective < curr_fit:
+                        global_best = particle.position
+
+                    curr_fit = self.calc_cost(particle.personal_best, dimension, capacity, coordsection, demand, depot)
+
+                    if objective < curr_fit:
+                        particle.personal_best = particle.position
+
+            if found:
+                break
+
+            w = (0.6 * (i - Iterations) / (Iterations ** 2)) + 0.6
+            c1 = -2 * i / Iterations + 2.5
+            c2 = 2 * i / Iterations + 0.5
+
+            # for each particle, update velocity, and update position
+            for particle in particles:
+                particle.velocity_update(w, c1, c2, global_best)
+                particle.position_update()
+
+
+        global_cost, cars = self.calc_cost(global_best, dimension, capacity, coordsection, demand, depot)
+
+        elapsed = time.time() - startt
+        print("Overall PSO runtime: " + str(elapsed))
+
+        plt.title('PSO:')
+        plt.plot(x, fit, label="fitness")
+        plt.legend()
+        plt.show()
+
+        return global_best , global_cost
+
+
+
 
 
 
@@ -488,4 +640,10 @@ if __name__ == "__main__":
 
     p4 = problem.ACO(dimension, capacity, nodes, demand, depot)
     print(p4)
+
+    print("PSO:")
+
+    p5, c5 = problem.PSO(dimension, capacity, nodes, demand, depot)
+    print(p5)
+    print(c5)
 
