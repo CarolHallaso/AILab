@@ -5,7 +5,7 @@ import numpy
 from matplotlib import pyplot as plt
 import Dummies
 from MegaHal import MegaHal
-from RoshamboPlayer import RoshamboPlayer
+from RPlayer import RPlayer
 
 
 POPSIZE = 1000

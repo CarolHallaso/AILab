@@ -1,6 +1,6 @@
 import random
 import time
-from RoshamboPlayer import RoshamboPlayer
+from RPlayer import RPlayer
 
 
 def halbot_compare(context1, context2):
@@ -33,7 +33,7 @@ def halbot_compare(context1, context2):
     return 0
 
 
-class MegaHal(RoshamboPlayer):
+class MegaHal(RPlayer):
 
     def __init__(self):
         super().__init__()

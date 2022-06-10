@@ -1,9 +1,9 @@
 import random
 
-from Player import Player
+from RPlayer import RPlayer
 
 
-class AntiFlat(Player):
+class AntiFlat(RPlayer):
     """
     ************************************************************************
     maximally exploit flat distribution
@@ -55,7 +55,7 @@ class AntiFlat(Player):
         return "standard"
 
 
-class Copy(Player):
+class Copy(RPlayer):
     """
    ************************************************************************
    This player reacts to the opponent's last move
@@ -82,7 +82,7 @@ class Copy(Player):
         return "standard"
 
 
-class Freq(Player):
+class Freq(RPlayer):
     """
   ************************************************************************
   This player reacts on the most frequently played move of the opponent
@@ -115,7 +115,7 @@ class Freq(Player):
         return "standard"
 
 
-class Flat(Player):
+class Flat(RPlayer):
     """
     ************************************************************************
     flat distribution, 20% chance of most frequent actions
@@ -177,7 +177,7 @@ class Flat(Player):
         return "standard"
 
 
-class Foxtrot(Player):
+class Foxtrot(RPlayer):
     """
    ************************************************************************
    set pattern: rand prev+2 rand prev+1 rand prev+0, repeat
@@ -213,7 +213,7 @@ class Foxtrot(Player):
         return "standard"
 
 
-class Bruijn81(Player):
+class Bruijn81(RPlayer):
     """
    ************************************************************************
    several De Bruijn strings of length 81 concatenated
@@ -268,7 +268,7 @@ class Bruijn81(Player):
         return "standard"
 
 
-class Pi(Player):
+class Pi(RPlayer):
     """
    ************************************************************************
    base each decision on a digit of pi (skipping 0s)
@@ -334,7 +334,7 @@ class Pi(Player):
         return "standard"
 
 
-class Play226(Player):
+class Play226(RPlayer):
     """
    ************************************************************************
    fixed strategy (20,20,60): plays rock with p 0.2 paper with p 0.2 ad scissors with p 0.6
@@ -368,7 +368,7 @@ class Play226(Player):
         return "standard"
 
 
-class RndPlayer(Player):
+class RndPlayer(RPlayer):
     """
    ************************************************************************
    This player plays randomly with equal probabilities
@@ -392,7 +392,7 @@ class RndPlayer(Player):
         return "standard"
 
 
-class Rotate(Player):
+class Rotate(RPlayer):
     """
    ************************************************************************
    This player rotates Rock Paper Scissors
@@ -420,7 +420,7 @@ class Rotate(Player):
         return "standard"
 
 
-class Switch(Player):
+class Switch(RPlayer):
     """
    ************************************************************************
    This player never repeats the previous pick
@@ -463,7 +463,7 @@ class Switch(Player):
         return "standard"
 
 
-class SwitchALot(Player):
+class SwitchALot(RPlayer):
     """
    ************************************************************************
    seldom repeat the previous pick
