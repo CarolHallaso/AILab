@@ -50,7 +50,7 @@ class Agent:
 
 
     def init_opponents(self):
-        # Initializes k parasites of each bot
+
         i = 0
         while i < self.num_of_opponents:
 
@@ -66,7 +66,6 @@ class Agent:
             self.parasites.append(Dummies.RndPlayer())
             self.parasites.append(Dummies.Rotate())
             self.parasites.append(Dummies.SwitchALot())
-            #self.parasites.append(MegaHal())
             i += 13
 
 
